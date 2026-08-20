@@ -1,0 +1,376 @@
+/* 시안의 .phone 내부 구조를 실제 뷰포트로 옮긴 것.
+   시안에서는 390×756 프레임 안에 들어 있던 appbar / body / nav 가
+   여기서는 화면 전체를 차지한다. */
+
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  /* 데스크탑에서 전체 폭으로 늘어지면 시안과 완전히 달라 보인다. */
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--paper);
+  border-left: var(--b);
+  border-right: var(--b);
+}
+
+@media (max-width: 480px) {
+  .app {
+    border-left: 0;
+    border-right: 0;
+  }
+}
+
+/* ─── appbar ─── */
+.appbar {
+  padding: calc(16px + env(safe-area-inset-top)) 18px 13px;
+  border-bottom: var(--b);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--paper);
+  flex: none;
+}
+.appbar h1 {
+  font-size: 25px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.appbar .aside {
+  margin-left: auto;
+  font-family: var(--pix);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.35;
+  white-space: pre-line;
+}
+
+/* ─── 스크롤 본문 ─── */
+.screenbody {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--cream);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ─── 빈 상태 ─── */
+.empty {
+  height: 100%;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 28px;
+  text-align: center;
+}
+.empty .mark {
+  width: 62px;
+  height: 62px;
+  border: var(--b);
+  background: var(--paper);
+  box-shadow: var(--sh-s);
+  display: grid;
+  place-items: center;
+}
+.empty .mark svg {
+  width: 28px;
+  height: 28px;
+  stroke: var(--ink);
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+.empty b {
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.empty p {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 28ch;
+}
+.empty .stamp {
+  font-family: var(--pix);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  border: 1.5px dashed var(--muted);
+  padding: 2px 7px;
+}
+
+/* ─── 하단 탭 (시안 nav 그대로) ─── */
+.nav {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: var(--b);
+  background: var(--paper);
+  flex: none;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 0 11px;
+  color: var(--muted);
+  border-right: 2px solid rgba(52, 23, 13, 0.18);
+  -webkit-tap-highlight-color: transparent;
+}
+.nav a:last-child {
+  border-right: 0;
+}
+.nav a svg {
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: square;
+}
+.nav a span {
+  font-family: var(--pix);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+.nav a.on {
+  color: var(--ink);
+  background: var(--sagelt);
+}
+.nav a.mid {
+  background: var(--ink);
+  color: var(--cream);
+  border-right-color: var(--ink);
+}
+
+/* ─── 로그인 ─── */
+.signin {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 26px;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 26px calc(32px + env(safe-area-inset-bottom));
+}
+.signin .card {
+  border: var(--b);
+  background: var(--paper);
+  box-shadow: var(--sh);
+  padding: 26px 22px;
+}
+.signin .eyebrow {
+  font-family: var(--pix);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 12px;
+}
+.signin h1 {
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+.signin h1 em {
+  font-style: normal;
+  background: var(--tan);
+  box-shadow: 0 0 0 3px var(--tan);
+}
+.signin p {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.signin .bigbtn {
+  width: 100%;
+  border: var(--b);
+  background: var(--tan);
+  box-shadow: var(--sh-s);
+  padding: 14px;
+  text-align: center;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.signin .bigbtn:disabled {
+  background: var(--sagelt);
+  box-shadow: none;
+  cursor: progress;
+}
+.signin .bigbtn svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--ink);
+  fill: none;
+  stroke-width: 2.2;
+}
+.signin .err {
+  border: var(--b2);
+  border-style: dashed;
+  background: var(--sagelt);
+  padding: 10px 11px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.signin .err b {
+  font-family: var(--pix);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  font-weight: 400;
+  display: block;
+  margin-bottom: 3px;
+}
+
+/* ─── 로딩 ─── */
+.boot {
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+  font-family: var(--pix);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+/* ─── 계정 블록 (시안 06 PROFILE .acct) ─── */
+.acct {
+  margin: 14px 14px 4px;
+  border: var(--b);
+  background: var(--sage);
+  box-shadow: var(--sh-s);
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.acct .av {
+  width: 52px;
+  height: 52px;
+  border: var(--b);
+  background: var(--cream);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  flex: none;
+  overflow: hidden;
+}
+.acct .av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.acct .who {
+  min-width: 0;
+}
+.acct b {
+  display: block;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acct em {
+  font-style: normal;
+  font-family: var(--pix);
+  font-size: 10.5px;
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── 설정/프로필 행 (시안 .rows / .row) ─── */
+.rows {
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.row {
+  border: var(--b2);
+  background: var(--paper);
+  box-shadow: var(--sh-xs);
+  padding: 11px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+.row .rl {
+  flex: 1;
+  min-width: 0;
+}
+.row .rl b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+.row .rl em {
+  font-style: normal;
+  display: block;
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.row svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--ink);
+  fill: none;
+  stroke-width: 2.2;
+  flex: none;
+}
+.row .tag {
+  font-family: var(--pix);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  border: 2px solid var(--ink);
+  padding: 2px 5px;
+  background: var(--tan);
+  flex: none;
+}
+.row.off {
+  opacity: 0.5;
+  box-shadow: none;
+  border-style: dashed;
+}
+.row.danger {
+  background: var(--ink);
+}
+.row.danger .rl b {
+  color: var(--cream);
+}
+.row.danger .rl em {
+  color: var(--sagelt);
+}
+.row.danger svg {
+  stroke: var(--cream);
+}
+
+.ttlbl {
+  font-family: var(--pix);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  display: block;
+  padding: 14px 14px 7px;
+}

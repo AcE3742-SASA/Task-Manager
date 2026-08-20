@@ -1,0 +1,63 @@
+@font-face {
+  font-family: 'MG Rounded';
+  src: url('/fonts/mg-rounded.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MG Pixel';
+  src: url('/fonts/mg-pixel.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--cream);
+  background-image:
+    linear-gradient(to right, rgba(52, 23, 13, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(52, 23, 13, 0.055) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--ink);
+  font-family: var(--disp);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  /* 모서리 0의 디자인이라 iOS 고무줄 스크롤이 특히 눈에 띈다. */
+  overscroll-behavior-y: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ─── 타이포 유틸 (시안과 동일) ─── */
+.pix {
+  font-family: var(--pix);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}

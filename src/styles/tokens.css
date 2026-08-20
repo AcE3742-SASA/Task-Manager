@@ -1,0 +1,21 @@
+/* design/mockup-v1.html 의 :root 를 그대로 옮긴 것.
+   값을 여기서 재해석하지 않는다. 시안이 원본이다. */
+
+:root {
+  --ink: #34170d;
+  --sage: #8fa28a;
+  --sagelt: #c7d3c0;
+  --cream: #f7f4ed;
+  --tan: #c8a96b;
+  --muted: #8a7568;
+  --paper: #fffdf8;
+
+  --disp: 'MG Rounded', 'Apple SD Gothic Neo', 'Pretendard', system-ui, sans-serif;
+  --pix: 'MG Pixel', ui-monospace, 'SFMono-Regular', monospace;
+
+  --b: 3px solid var(--ink);
+  --b2: 2px solid var(--ink);
+  --sh: 7px 7px 0 var(--ink);
+  --sh-s: 4px 4px 0 var(--ink);
+  --sh-xs: 3px 3px 0 var(--ink);
+}
