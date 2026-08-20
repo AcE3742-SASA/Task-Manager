@@ -1,0 +1,129 @@
+import { describe, expect, it } from 'vitest'
+import { formatDue, fromLocalInput, groupOf, nextDue, toLocalInput } from './due'
+import type { Slot } from './subjects'
+
+const slot = (day: number): Slot => ({ day: day as 1, period: 1 })
+
+/** 테스트를 로컬 시간대와 무관하게 쓰기 위해 UTC 순간으로 다룬다. KST = UTC+9. */
+const at = (iso: string) => new Date(iso)
+const iso = (d: Date) => d.toISOString()
+
+// 2026-08-20 은 목요일. 8/24 월, 8/30 일, 8/31 월.
+describe('nextDue — PRD 확정 규칙', () => {
+  it('인공지능(월1·월8·월9)을 월요일에 등록 → 다음 주 첫 수업은 월요일, 기한은 그 전날 일요일 23:59', () => {
+    const due = nextDue([slot(1), slot(1), slot(1)], at('2026-08-24T01:00:00Z'))
+    expect(iso(due)).toBe('2026-08-30T14:59:00.000Z') // 8/30(일) 23:59 KST
+  })
+
+  it('일반물리학I(수·금)을 수요일에 등록 → 다음 주 수요일 수업, 기한은 화요일 23:59', () => {
+    const due = nextDue([slot(3), slot(5)], at('2026-08-26T01:00:00Z'))
+    expect(iso(due)).toBe('2026-09-01T14:59:00.000Z') // 9/1(화) 23:59 KST
+  })
+
+  it('같은 과목을 금요일에 등록해도 결과가 같다 — 교시가 아니라 수업일이 기준', () => {
+    const wed = nextDue([slot(3), slot(5)], at('2026-08-26T01:00:00Z'))
+    const fri = nextDue([slot(3), slot(5)], at('2026-08-28T01:00:00Z'))
+    expect(iso(fri)).toBe(iso(wed))
+  })
+
+  it('같은 날 여러 교시는 하루로 묶인다', () => {
+    const one = nextDue([{ day: 1, period: 1 }], at('2026-08-24T01:00:00Z'))
+    const three = nextDue(
+      [{ day: 1, period: 1 }, { day: 1, period: 8 }, { day: 1, period: 9 }],
+      at('2026-08-24T01:00:00Z'),
+    )
+    expect(iso(three)).toBe(iso(one))
+  })
+})
+
+describe('nextDue — 경계', () => {
+  it('슬롯이 없으면 등록 시점 + 7일 23:59 로 후퇴한다', () => {
+    const due = nextDue([], at('2026-08-20T06:00:00Z')) // 8/20(목) 15:00 KST
+    expect(iso(due)).toBe('2026-08-27T14:59:00.000Z')
+  })
+
+  it('주말에 등록해도 다음 주가 제대로 잡힌다', () => {
+    // 8/22(토) 등록 → 다음 주는 8/24 시작 → 월요일 수업 → 8/23(일) 23:59
+    expect(iso(nextDue([slot(1)], at('2026-08-22T01:00:00Z')))).toBe('2026-08-23T14:59:00.000Z')
+    // 8/23(일) 등록도 같은 주 취급 (주 시작이 월요일이므로)
+    expect(iso(nextDue([slot(1)], at('2026-08-23T01:00:00Z')))).toBe('2026-08-23T14:59:00.000Z')
+  })
+
+  it('연말에 등록하면 해가 넘어간다', () => {
+    // 2026-12-30(수) 등록 → 다음 주 월요일은 2027-01-04 → 기한 2027-01-03 23:59
+    expect(iso(nextDue([slot(1)], at('2026-12-30T01:00:00Z')))).toBe('2027-01-03T14:59:00.000Z')
+  })
+
+  it('KST 자정 직전에 등록해도 날짜가 밀리지 않는다', () => {
+    // 8/24(월) 23:30 KST = 8/24T14:30Z. 아직 월요일이다.
+    expect(iso(nextDue([slot(1)], at('2026-08-24T14:30:00Z')))).toBe('2026-08-30T14:59:00.000Z')
+  })
+
+  it('주 시작 요일을 일요일로 주면 경계가 하루 당겨진다', () => {
+    // 8/23(일) 등록. 주 시작이 일요일이면 이번 주는 8/23~8/29, 다음 주는 8/30 시작.
+    // 월요일 수업은 8/31, 기한은 8/30(일) 23:59.
+    expect(iso(nextDue([slot(1)], at('2026-08-23T01:00:00Z'), 0))).toBe('2026-08-30T14:59:00.000Z')
+  })
+})
+
+describe('groupOf', () => {
+  const now = at('2026-08-20T01:00:00Z') // 8/20(목) 10:00 KST
+
+  it('오늘 마감은 오늘', () => {
+    expect(groupOf(at('2026-08-20T14:59:00Z'), now, false)).toBe('오늘')
+  })
+
+  it('기한이 지난 것도 오늘에 넣는다 — 별도 그룹을 만들지 않는다', () => {
+    expect(groupOf(at('2026-08-19T14:59:00Z'), now, false)).toBe('오늘')
+    expect(groupOf(at('2026-07-01T14:59:00Z'), now, false)).toBe('오늘')
+  })
+
+  it('내일 · 이번 주 · 나중', () => {
+    expect(groupOf(at('2026-08-21T14:59:00Z'), now, false)).toBe('내일')
+    expect(groupOf(at('2026-08-23T14:59:00Z'), now, false)).toBe('이번 주') // 일요일 = 이번 주 끝
+    expect(groupOf(at('2026-08-24T14:59:00Z'), now, false)).toBe('나중') // 다음 월요일
+  })
+
+  it('완료는 기한과 무관하게 완료', () => {
+    expect(groupOf(at('2026-08-20T14:59:00Z'), now, true)).toBe('완료')
+    expect(groupOf(at('2026-07-01T14:59:00Z'), now, true)).toBe('완료')
+  })
+})
+
+describe('formatDue', () => {
+  const now = at('2026-08-20T01:00:00Z')
+
+  it('오늘·내일은 시각을 크게, 날짜말을 작게', () => {
+    expect(formatDue(at('2026-08-20T14:59:00Z'), now, false)).toEqual({ main: '23:59', sub: '오늘' })
+    expect(formatDue(at('2026-08-21T14:59:00Z'), now, false)).toEqual({ main: '23:59', sub: '내일' })
+  })
+
+  it('그 밖에는 날짜를 크게', () => {
+    expect(formatDue(at('2026-08-24T14:59:00Z'), now, false)).toEqual({ main: '8/24 월', sub: '23:59' })
+  })
+
+  it('완료는 날짜 + 완료', () => {
+    expect(formatDue(at('2026-08-19T14:59:00Z'), now, true)).toEqual({ main: '8/19 수', sub: '완료' })
+  })
+})
+
+describe('기한이 지난 표시', () => {
+  const now = at('2026-08-20T01:00:00Z')
+
+  it('오늘 그룹에 들어가되 "지남"으로 구분된다', () => {
+    expect(groupOf(at('2026-08-18T14:59:00Z'), now, false)).toBe('오늘')
+    expect(formatDue(at('2026-08-18T14:59:00Z'), now, false)).toEqual({ main: '8/18 화', sub: '지남' })
+  })
+})
+
+describe('datetime-local 왕복', () => {
+  it('KST 벽시계로 나갔다가 같은 순간으로 돌아온다', () => {
+    const d = at('2026-08-30T14:59:00Z') // 8/30 23:59 KST
+    expect(toLocalInput(d)).toBe('2026-08-30T23:59')
+    expect(iso(fromLocalInput(toLocalInput(d))!)).toBe(iso(d))
+  })
+
+  it('망가진 값은 null', () => {
+    expect(fromLocalInput('')).toBeNull()
+  })
+})

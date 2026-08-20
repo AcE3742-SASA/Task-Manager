@@ -9,6 +9,7 @@ import { Settings } from './screens/Settings'
 import { SignIn } from './screens/SignIn'
 import { SubjectEdit } from './screens/SubjectEdit'
 import { Subjects } from './screens/Subjects'
+import { TaskEdit } from './screens/TaskEdit'
 import { Timetable } from './screens/Timetable'
 import type { User } from 'firebase/auth'
 
@@ -16,9 +17,10 @@ function Shell({ user }: { user: User }) {
   return (
     <div className="app">
       <Routes>
-        <Route path="/" element={<List />} />
+        <Route path="/" element={<List uid={user.uid} />} />
         <Route path="/calendar" element={<Calendar />} />
-        <Route path="/new" element={<New />} />
+        <Route path="/new" element={<New uid={user.uid} />} />
+        <Route path="/task/:id" element={<TaskEdit uid={user.uid} />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile user={user} />} />
         <Route path="/timetable" element={<Timetable uid={user.uid} />} />
