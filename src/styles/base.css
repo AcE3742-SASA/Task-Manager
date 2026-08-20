@@ -22,10 +22,18 @@
   padding: 0;
 }
 
+/* 페이지 자체는 절대 움직이지 않는다 — 스크롤도 고무줄 반동도 없다.
+   실제 스크롤이 필요한 곳은 .screenbody 안쪽뿐이다. position:fixed 는
+   iOS 에서 body 만 overflow:hidden 으로는 반동이 안 죽어서 같이 쓴다. */
 html,
 body,
 #root {
   height: 100%;
+  overflow: hidden;
+}
+body {
+  position: fixed;
+  inset: 0;
 }
 
 body {
@@ -38,8 +46,9 @@ body {
   font-family: var(--disp);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
-  /* 모서리 0의 디자인이라 iOS 고무줄 스크롤이 특히 눈에 띈다. */
-  overscroll-behavior-y: none;
+  overscroll-behavior: none;
+  /* 더블탭 줌 제거 — 탭 반응이 300ms 빨라지는 부수효과도 있다. */
+  touch-action: manipulation;
 }
 
 button {

@@ -2,10 +2,15 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Screen } from '../components/Screen'
 import { ICON_CATEGORIES, SUBJECT_ICONS } from '../components/subject-icons'
-import { COLORS, createSubject, removeSubject, saveSubject, useSubjects } from '../lib/subjects'
+import {
+  COLORS,
+  SHORT_MAX,
+  createSubject,
+  removeSubject,
+  saveSubject,
+  useSubjects,
+} from '../lib/subjects'
 import type { Subject } from '../lib/subjects'
-
-const SHORT_MAX = 3
 
 export function SubjectEdit({ uid }: { uid: string }) {
   const { id } = useParams()

@@ -53,6 +53,8 @@
   overflow-y: auto;
   background: var(--cream);
   -webkit-overflow-scrolling: touch;
+  /* 안쪽 스크롤이 끝에 닿아도 바깥으로 넘어가지 않는다. */
+  overscroll-behavior: contain;
 }
 
 /* ─── 빈 상태 ─── */
@@ -559,11 +561,11 @@
   flex-direction: column;
   gap: 9px;
 }
+/* 과목이 12개라 가로로 밀면 뒤쪽이 안 보인다. 줄바꿈해서 한 번에 다 띄운다. */
 .palette {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 2px;
 }
 .palette .chip {
   flex: none;

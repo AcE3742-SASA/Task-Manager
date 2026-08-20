@@ -9,13 +9,16 @@ export const DAY_LABEL: Record<Day, string> = { 1: '월', 2: '화', 3: '수', 4:
 export const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 /** 시안의 색칩 4종. 12개 과목을 4색으로 구분하지 않는다 — 식별은 아이콘과 줄임말이 한다. */
+/** 줄임말 길이 상한. 격자 칸 폭(약 63px)이 정하는 값이라 늘릴 때 칸을 같이 본다. */
+export const SHORT_MAX = 4
+
 export const COLORS = ['#8FA28A', '#C7D3C0', '#C8A96B', '#34170D']
 
 export type Slot = { day: Day; period: number; teacher?: string; room?: string }
 
 export type SubjectInput = {
   name: string
-  /** 최대 3글자. 시간표 칸에 이 값이 들어간다. */
+  /** 최대 4글자. 시간표 칸에 이 값이 들어간다. */
   short: string
   icon: string
   color: string
@@ -45,7 +48,7 @@ export function normalizeName(name: string): string {
 function clean(input: SubjectInput): SubjectInput {
   return {
     name: normalizeName(input.name).trim(),
-    short: normalizeName(input.short).trim().slice(0, 3),
+    short: normalizeName(input.short).trim().slice(0, SHORT_MAX),
     icon: input.icon,
     color: input.color,
     slots: input.slots.map(({ day, period, teacher, room }) => ({
