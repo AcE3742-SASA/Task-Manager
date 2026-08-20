@@ -71,14 +71,35 @@ Production · Preview · Development 셋 다 체크한다.
 
 넣은 뒤 Vercel에서 **Redeploy** (환경변수는 재배포해야 반영된다).
 
-## 7. 승인된 도메인 등록
+## 7. 승인된 도메인 등록 — **두 군데다**
 
-Firebase 콘솔 → **Authentication → Settings → 승인된 도메인**에 추가:
+`authDomain` 을 배포 도메인으로 바꿨기 때문에 Firebase 쪽만으로는 부족하다.
+Google 쪽에도 같은 주소를 등록해야 한다. **한쪽만 하면 로그인이 실패한다.**
+
+### 7-1. Firebase 콘솔
+
+**Authentication → Settings → 승인된 도메인**에 추가:
 
 - `sasa-task-manager.vercel.app` (본인 배포 주소)
 - `localhost` (보통 이미 들어 있다)
 
-여기 없는 도메인에서 로그인하면 `auth/unauthorized-domain` 오류가 화면에 뜬다.
+빠지면 → `auth/unauthorized-domain`
+
+### 7-2. Google Cloud 콘솔 ⚠️ 빠뜨리기 쉬운 곳
+
+Firebase가 자동으로 만든 OAuth 클라이언트에는 `xxx.firebaseapp.com` 주소 하나만 등록돼 있다.
+`authDomain` 을 바꾸면 Google에 전달되는 `redirect_uri` 가 달라지므로 새 주소를 직접 넣어야 한다.
+
+1. <https://console.cloud.google.com/apis/credentials> → 위쪽에서 **Firebase와 같은 프로젝트** 선택
+2. **OAuth 2.0 클라이언트 ID** → `Web client (auto created by Google Service)`
+3. **승인된 JavaScript 원본**에 추가: `https://sasa-task-manager.vercel.app`
+4. **승인된 리디렉션 URI**에 추가: `https://sasa-task-manager.vercel.app/__/auth/handler`
+5. 저장 (반영에 1~2분, 드물게 더 걸린다)
+
+**기존 `xxx.firebaseapp.com` 항목은 지우지 않는다** — 8번의 로컬 개발이 그 주소를 쓴다.
+
+빠지면 → Google 로그인 화면에서 `400: redirect_uri_mismatch`
+(`Request details: redirect_uri=https://.../__/auth/handler`)
 
 ## 8. 로컬 개발 환경
 
@@ -112,7 +133,8 @@ npm run dev
 | 증상 | 원인 |
 |---|---|
 | "FIREBASE 설정 없음" | 환경변수 미등록, 또는 등록 후 재배포 안 함 |
-| `auth/unauthorized-domain` | 7번 승인된 도메인 누락 |
+| `400: redirect_uri_mismatch` | **7-2** Google Cloud OAuth 클라이언트에 리디렉션 URI 미등록 |
+| `auth/unauthorized-domain` | 7-1 Firebase 승인된 도메인 누락 |
 | 맥은 되는데 아이폰 홈 화면만 안 됨 | 6번 `authDomain` 이 `firebaseapp.com` 으로 들어감 |
 | 로그인 후 돌아왔는데 로그아웃 상태 | 5번 rewrite 의 projectId 미치환 |
 | 배포는 됐는데 새로고침하면 404 | `vercel.json` 의 SPA rewrite 누락 |
