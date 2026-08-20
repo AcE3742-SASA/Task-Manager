@@ -114,14 +114,15 @@
   border-top: var(--b);
   background: var(--paper);
   flex: none;
-  padding-bottom: env(safe-area-inset-bottom);
 }
 .nav a {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 9px 0 11px;
+  /* 홈 인디케이터 여백을 컨테이너가 아니라 탭이 먹는다.
+     그래야 활성 탭의 색과 칸 구분선이 화면 맨 아래까지 이어진다. */
+  padding: 9px 0 calc(11px + env(safe-area-inset-bottom));
   color: var(--muted);
   border-right: 2px solid rgba(52, 23, 13, 0.18);
   -webkit-tap-highlight-color: transparent;
@@ -300,7 +301,7 @@
 
 /* ─── 설정/프로필 행 (시안 .rows / .row) ─── */
 .rows {
-  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  padding: 12px 14px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -379,7 +380,7 @@
 
 /* ─── 폼 (시안 07 SUBJECT EDIT) ─── */
 .form {
-  padding: 15px 16px calc(18px + env(safe-area-inset-bottom));
+  padding: 15px 16px 18px;
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -556,7 +557,7 @@
 
 /* ─── 시간표 격자 ─── */
 .tt {
-  padding: 12px 12px calc(14px + env(safe-area-inset-bottom));
+  padding: 12px 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 9px;
@@ -791,7 +792,7 @@
 }
 
 .tasks-end {
-  height: calc(14px + env(safe-area-inset-bottom));
+  height: 14px;
 }
 
 /* ─── 자동 기한 안내 (시안 04) ─── */
@@ -849,7 +850,7 @@
 
 /* ─── 달력 ─── */
 .cal {
-  padding: 12px 12px calc(14px + env(safe-area-inset-bottom));
+  padding: 12px 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
