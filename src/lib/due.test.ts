@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { formatDue, fromLocalInput, groupOf, nextDue, toLocalInput } from './due'
+import {
+  dateFromDayNumber,
+  dayNumber,
+  formatDue,
+  fromLocalInput,
+  groupOf,
+  kstDate,
+  kstYmd,
+  monthGrid,
+  nextDue,
+  toLocalInput,
+  weekStrip,
+} from './due'
 import type { Slot } from './subjects'
 
 const slot = (day: number): Slot => ({ day: day as 1, period: 1 })
@@ -125,5 +137,37 @@ describe('datetime-local 왕복', () => {
 
   it('망가진 값은 null', () => {
     expect(fromLocalInput('')).toBeNull()
+  })
+})
+
+describe('달력 격자', () => {
+  it('월간은 항상 6주 42칸이고 이번 달 밖은 out 이다', () => {
+    const g = monthGrid(2026, 7, 1) // 2026년 8월, 주 시작 월요일
+    expect(g).toHaveLength(42)
+    // 8/1 은 토요일 → 앞에 월~금 5칸이 7월
+    expect(g.slice(0, 5).every((c) => c.out)).toBe(true)
+    expect(g[5].out).toBe(false)
+    expect(kstYmd(g[5].date).d).toBe(1)
+  })
+
+  it('주 시작 요일이 앞쪽 여백 칸 수를 바꾼다', () => {
+    // 격자는 늘 42칸이라 out 총합은 그대로다. 달라지는 건 1일 앞의 여백이다.
+    const lead = (weekStartsOn: number) =>
+      monthGrid(2026, 7, weekStartsOn).findIndex((c) => !c.out)
+    expect(lead(1)).toBe(5) // 8/1 은 토요일 → 월~금 5칸
+    expect(lead(0)).toBe(6) // 일요일 시작이면 한 칸 더
+  })
+
+  it('주간 스트립은 그 주의 시작 요일부터 7일', () => {
+    // 2026-08-20(목) 이 낀 주, 월요일 시작 → 8/17 ~ 8/23
+    const w = weekStrip(2026, 7, 20, 1)
+    expect(w).toHaveLength(7)
+    expect(kstYmd(w[0].date).d).toBe(17)
+    expect(kstYmd(w[6].date).d).toBe(23)
+  })
+
+  it('dayNumber 는 왕복한다', () => {
+    const d = kstDate(2026, 7, 20)
+    expect(kstYmd(dateFromDayNumber(dayNumber(d))).d).toBe(20)
   })
 })

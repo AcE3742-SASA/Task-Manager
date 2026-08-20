@@ -826,3 +826,129 @@
   line-height: 1.5;
   resize: none;
 }
+
+/* ─── 세그먼트 토글 (시안 05) ─── */
+.seg {
+  display: flex;
+  border: var(--b2);
+  flex: none;
+}
+.seg button {
+  font-family: var(--pix);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-right: 2px solid var(--ink);
+}
+.seg button:last-child {
+  border-right: 0;
+}
+.seg button.on {
+  background: var(--ink);
+  color: var(--cream);
+}
+
+/* ─── 달력 ─── */
+.cal {
+  padding: 12px 12px calc(14px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.calhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.calhead b {
+  font-size: 17px;
+  font-weight: 400;
+}
+.calhead .step {
+  border: var(--b2);
+  background: var(--paper);
+  width: 30px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  font-family: var(--pix);
+  font-size: 12px;
+}
+.month,
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.month .wd {
+  font-family: var(--pix);
+  font-size: 9.5px;
+  color: var(--muted);
+  text-align: center;
+  padding-bottom: 2px;
+}
+.month .day {
+  border: var(--b2);
+  background: var(--paper);
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 0 0;
+  font-family: var(--pix);
+  font-size: 10.5px;
+}
+/* 이번 달이 아닌 날은 있는 듯 없는 듯. 달의 형태를 흐리지 않는다. */
+.month .day.out {
+  opacity: 0.3;
+  border-style: dashed;
+}
+.month .day.today {
+  background: var(--sagelt);
+}
+.month .day.on {
+  background: var(--ink);
+  color: var(--cream);
+}
+.dots2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  padding: 0 2px;
+}
+.dots2 i {
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--ink);
+}
+.month .day.on .dots2 i {
+  border-color: var(--cream);
+}
+.week .d {
+  border: var(--b2);
+  background: var(--paper);
+  padding: 6px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--pix);
+  font-size: 9.5px;
+}
+.week .d .n {
+  font-size: 14px;
+}
+.week .d .c {
+  color: var(--muted);
+}
+.week .d.today {
+  background: var(--sagelt);
+}
+.week .d.on {
+  background: var(--ink);
+  color: var(--cream);
+}
+.week .d.on .c {
+  color: var(--sagelt);
+}

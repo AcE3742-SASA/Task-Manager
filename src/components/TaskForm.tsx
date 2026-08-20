@@ -6,6 +6,8 @@ import { classDayOf, fromLocalInput, kstLabel, nextDue, toLocalInput, todayEnd }
 import { createTask, removeTask, saveTask, KINDS } from '../lib/tasks'
 import type { Kind, Task } from '../lib/tasks'
 import type { Subject } from '../lib/subjects'
+import { useT } from '../lib/i18n'
+import { useAppSettings } from '../lib/settings'
 
 const Clock = () => (
   <svg viewBox="0 0 24 24">
@@ -19,6 +21,8 @@ type Props = { uid: string; subjects: Subject[]; task?: Task }
 export function TaskForm({ uid, subjects, task }: Props) {
   const navigate = useNavigate()
   const editing = !!task
+  const { weekStartsOn } = useAppSettings()
+  const t = useT()
 
   const [title, setTitle] = useState(task?.title ?? '')
   const [subjectId, setSubjectId] = useState<string | null>(task?.subjectId ?? null)
@@ -36,8 +40,8 @@ export function TaskForm({ uid, subjects, task }: Props) {
   // 과목을 고르면 그 자리에서 기한이 다시 계산된다. 사용자가 손댄 뒤에는 덮지 않는다.
   useEffect(() => {
     if (dueTouched) return
-    setDue(subject ? nextDue(subject.slots ?? [], new Date()) : todayEnd(new Date()))
-  }, [subjectId, dueTouched, subject])
+    setDue(subject ? nextDue(subject.slots ?? [], new Date(), weekStartsOn) : todayEnd(new Date()))
+  }, [subjectId, dueTouched, subject, weekStartsOn])
 
   async function submit() {
     setBusy(true)
@@ -71,10 +75,10 @@ export function TaskForm({ uid, subjects, task }: Props) {
 
   return (
     <Screen
-      title={editing ? '할 일 수정' : '새 할 일'}
+      title={editing ? t('할 일 수정', 'Edit task') : t('새 할 일', 'New task')}
       action={
         <button className="act" onClick={() => navigate(-1)}>
-          취소
+          {t('취소', 'Cancel')}
         </button>
       }
     >
@@ -82,7 +86,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
         {err && <div className="hint">{err}</div>}
 
         <div className="field">
-          <span className="lbl">제목</span>
+          <span className="lbl">{t('제목', 'TITLE')}</span>
           <input
             className="inp"
             value={title}
@@ -93,7 +97,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
         </div>
 
         <div className="field">
-          <span className="lbl">과목</span>
+          <span className="lbl">{t('과목', 'SUBJECT')}</span>
           <div className="chips">
             {subjects.map((s) => (
               <button
@@ -113,7 +117,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
           <div className="autonote">
             <Clock />
             <span>
-              <b>자동 계산된 기한</b>
+              <b>{t('자동 계산된 기한', 'AUTO-FILLED DUE DATE')}</b>
               <br />
               {dueTouched ? (
                 '직접 정한 기한을 쓴다.'
@@ -132,7 +136,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
         )}
 
         <div className="field">
-          <span className="lbl">기한</span>
+          <span className="lbl">{t('기한', 'DUE')}</span>
           <input
             className="inp pix"
             type="datetime-local"
@@ -147,7 +151,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
         </div>
 
         <div className="field">
-          <span className="lbl">과제 종류 — 표시 전용</span>
+          <span className="lbl">{t('과제 종류 — 표시 전용', 'KIND — LABEL ONLY')}</span>
           <div className="chips">
             {KINDS.map((k) => (
               <button
@@ -162,7 +166,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
         </div>
 
         <div className="field">
-          <span className="lbl">내용 — 선택</span>
+          <span className="lbl">{t('내용 — 선택', 'NOTE — OPTIONAL')}</span>
           <textarea
             className="inp ta"
             value={note}
@@ -172,14 +176,14 @@ export function TaskForm({ uid, subjects, task }: Props) {
         </div>
 
         <button className="bigbtn" disabled={!title.trim() || busy} onClick={submit}>
-          {busy ? '저장 중…' : '저장'}
+          {busy ? t('저장 중…', 'Saving…') : t('저장', 'Save')}
         </button>
 
         {editing && (
           <button className="row danger" disabled={busy} onClick={drop}>
             <span className="rl">
-              <b>할 일 삭제</b>
-              <em>되돌릴 수 없다</em>
+              <b>{t('할 일 삭제', 'Delete task')}</b>
+              <em>{t('되돌릴 수 없다', 'Cannot be undone')}</em>
             </span>
           </button>
         )}

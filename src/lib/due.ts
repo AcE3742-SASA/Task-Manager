@@ -104,3 +104,31 @@ export function todayEnd(now: Date): Date {
   const p = kstParts(now)
   return fromKst(p.y, p.m, p.d, 23, 59)
 }
+
+/** 달력이 쓰는 KST 날짜 도구. 정오를 앵커로 잡아 자정 경계 혼동을 피한다. */
+export const dayNumber = (t: Date) => kstDayNumber(t)
+export const kstYmd = (d: Date) => {
+  const p = kstParts(d)
+  return { y: p.y, m: p.m, d: p.d, day: p.day }
+}
+export const kstDate = (y: number, m: number, d: number) => fromKst(y, m, d, 12, 0)
+
+/** dayNumber 를 되돌린 그 날의 KST 정오. */
+export const dateFromDayNumber = (n: number) => new Date(n * DAY_MS - KST + 12 * 3600_000)
+
+export type Cell = { date: Date; out: boolean }
+
+/** 월간 6주 격자. 앞뒤 달 날짜는 out 으로 표시해 흐린다. */
+export function monthGrid(y: number, m: number, weekStartsOn: number): Cell[] {
+  const lead = (kstYmd(kstDate(y, m, 1)).day - weekStartsOn + 7) % 7
+  return Array.from({ length: 42 }, (_, i) => {
+    const date = kstDate(y, m, 1 - lead + i)
+    return { date, out: kstYmd(date).m !== m }
+  })
+}
+
+/** 주간 7일 스트립. 주 시작 요일을 따른다. */
+export function weekStrip(y: number, m: number, d: number, weekStartsOn: number): Cell[] {
+  const back = (kstYmd(kstDate(y, m, d)).day - weekStartsOn + 7) % 7
+  return Array.from({ length: 7 }, (_, i) => ({ date: kstDate(y, m, d - back + i), out: false }))
+}

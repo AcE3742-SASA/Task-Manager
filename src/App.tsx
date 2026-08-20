@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
+import { SettingsContext, useSettings } from './lib/settings'
 import { useAuth } from './lib/useAuth'
 import { Calendar } from './screens/Calendar'
 import { List } from './screens/List'
@@ -14,14 +15,17 @@ import { Timetable } from './screens/Timetable'
 import type { User } from 'firebase/auth'
 
 function Shell({ user }: { user: User }) {
+  const settings = useSettings(user.uid)
+
   return (
+    <SettingsContext.Provider value={settings}>
     <div className="app">
       <Routes>
         <Route path="/" element={<List uid={user.uid} />} />
-        <Route path="/calendar" element={<Calendar />} />
+        <Route path="/calendar" element={<Calendar uid={user.uid} />} />
         <Route path="/new" element={<New uid={user.uid} />} />
         <Route path="/task/:id" element={<TaskEdit uid={user.uid} />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/settings" element={<Settings uid={user.uid} />} />
         <Route path="/profile" element={<Profile user={user} />} />
         <Route path="/timetable" element={<Timetable uid={user.uid} />} />
         <Route path="/subjects" element={<Subjects uid={user.uid} />} />
@@ -31,6 +35,7 @@ function Shell({ user }: { user: User }) {
       </Routes>
       <BottomNav />
     </div>
+    </SettingsContext.Provider>
   )
 }
 
