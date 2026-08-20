@@ -119,10 +119,14 @@ npm run dev
 
 ## Acceptance
 
-- [ ] 배포 주소에서 Google 계정으로 로그인된다 — **사용자 대기** (Firebase·Vercel 콘솔 필요)
+- [x] 배포 주소에서 Google 계정으로 로그인된다 — 사용자 확인 (2026-08-20)
+  - 걸린 곳: 커스텀 `authDomain` 은 Google Cloud OAuth 클라이언트에 리디렉션 URI를 따로
+    등록해야 한다 (`redirect_uri_mismatch`). 문서 7-2절로 반영.
 - [x] 빈 상태의 5개 화면이 시안의 디자인 언어로 보인다 — 375px에서 5화면 전부 육안 확인
-- [ ] 아이폰 홈 화면에 설치되고 standalone으로 실행된다 — **사용자 대기** (실기기 필요)
-  - [x] 설치 요건은 충족: manifest(standalone·아이콘 3종)·SW 루트 스코프 등록·apple-touch-icon·apple 메타
+- [x] 아이폰 홈 화면에 설치되고 standalone으로 실행된다 — 실기기 확인 (2026-08-20)
+  - [x] 설치 요건 충족: manifest(standalone·아이콘 3종)·SW 루트 스코프 등록·apple-touch-icon·apple 메타
+  - [x] standalone 에서 Google 로그인 성공 — `/__/auth/*` 프록시 + 배포 도메인 `authDomain` 조합이 실제로 통했다.
+        M1 최대 위험이었던 항목이 해소됐다.
 - [x] `npm run build` · `tsc --noEmit` 통과
 - [x] 사용자용 콘솔 설정 문서가 있다 — `docs/setup-firebase-vercel.md`
 - [x] 발명이 아니라 시안을 옮겼다 — 런타임에서 `--ink #34170d` · `--cream #f7f4ed` · `--sh 7px 7px 0 #34170d` 일치 확인
