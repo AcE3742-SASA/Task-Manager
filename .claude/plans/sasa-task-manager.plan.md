@@ -119,12 +119,23 @@ npm run dev
 
 ## Acceptance
 
-- [ ] 배포 주소에서 Google 계정으로 로그인된다
-- [ ] 빈 상태의 5개 화면이 시안의 디자인 언어로 보인다
-- [ ] 아이폰 홈 화면에 설치되고 standalone으로 실행된다
-- [ ] `npm run build` · `tsc --noEmit` 통과
-- [ ] 사용자용 콘솔 설정 문서가 있다
-- [ ] 발명이 아니라 시안을 옮겼다 (색·테두리·섀도우·서체 값 일치)
+- [ ] 배포 주소에서 Google 계정으로 로그인된다 — **사용자 대기** (Firebase·Vercel 콘솔 필요)
+- [x] 빈 상태의 5개 화면이 시안의 디자인 언어로 보인다 — 375px에서 5화면 전부 육안 확인
+- [ ] 아이폰 홈 화면에 설치되고 standalone으로 실행된다 — **사용자 대기** (실기기 필요)
+  - [x] 설치 요건은 충족: manifest(standalone·아이콘 3종)·SW 루트 스코프 등록·apple-touch-icon·apple 메타
+- [x] `npm run build` · `tsc --noEmit` 통과
+- [x] 사용자용 콘솔 설정 문서가 있다 — `docs/setup-firebase-vercel.md`
+- [x] 발명이 아니라 시안을 옮겼다 — 런타임에서 `--ink #34170d` · `--cream #f7f4ed` · `--sh 7px 7px 0 #34170d` 일치 확인
+- [x] 두 서체 실제 적용 확인 (`document.fonts.check` 둘 다 true)
+- [x] 로마숫자 `Ⅰ` 폰트 튐 재현 확인 — M2에서 ASCII 정규화 필요
+
+### 구현 중 추가된 것 (계획에 없던 판단)
+
+- **dev 전용 미리보기 우회** (`src/App.tsx`). Firebase 콘솔 설정 전에는 로그인이 불가능해
+  5개 화면을 볼 수 없었다. `import.meta.env.DEV && !isConfigured` 조건이라 프로덕션 번들에서
+  제거되는 것을 grep으로 확인했다. **M3에서 Firestore가 붙으면 실데이터 경로가 되므로 없앤다.**
+- **`scripts/make-icons.mjs`**. 아이콘 생성을 위해 이미지 의존성을 추가하는 대신 `node:zlib`로
+  PNG를 직접 썼다. 사각형 몇 개뿐이라 이게 더 짧다.
 
 ## Out of Scope (이 마일스톤 아님)
 
