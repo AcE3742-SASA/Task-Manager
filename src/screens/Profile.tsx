@@ -1,7 +1,8 @@
 import { signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { Screen } from '../components/Screen'
-import { IconArrow, IconSignOut } from '../components/icons'
+import { Link } from 'react-router-dom'
+import { IconArrow, IconCalendar, IconList, IconSignOut } from '../components/icons'
 import { auth } from '../lib/firebase'
 
 export function Profile({ user }: { user: User }) {
@@ -21,14 +22,23 @@ export function Profile({ user }: { user: User }) {
 
       <span className="ttlbl">시간표</span>
       <div className="rows">
-        <div className="row off">
+        <Link className="row" to="/timetable">
+          <IconCalendar />
           <span className="rl">
-            <b>시간표 설정</b>
-            <em>과목을 등록하고 요일×교시에 배치한다</em>
+            <b>시간표</b>
+            <em>요일×교시 격자에 과목을 배치한다</em>
           </span>
-          <span className="tag">M2</span>
           <IconArrow />
-        </div>
+        </Link>
+
+        <Link className="row" to="/subjects">
+          <IconList />
+          <span className="rl">
+            <b>과목</b>
+            <em>이름 · 줄임말 · 아이콘 · 색</em>
+          </span>
+          <IconArrow />
+        </Link>
 
         <button className="row danger" onClick={() => auth && signOut(auth)}>
           <span className="rl">

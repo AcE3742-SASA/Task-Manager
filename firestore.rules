@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// 사용자별 격리. 이 앱에는 공유 데이터가 없다 — 남의 uid 경로는 전부 거부한다.
+// 콘솔 → Firestore Database → 규칙 탭에 그대로 붙여넣고 "게시".
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

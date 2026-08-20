@@ -1,6 +1,12 @@
 import { initializeApp } from 'firebase/app'
 import { GoogleAuthProvider, getAuth } from 'firebase/auth'
 import type { Auth } from 'firebase/auth'
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore'
+import type { Firestore } from 'firebase/firestore'
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,6 +22,19 @@ export const isConfigured = Object.values(config).every(
   (v) => typeof v === 'string' && v.length > 0,
 )
 
-export const auth: Auth | null = isConfigured ? getAuth(initializeApp(config)) : null
+const app = isConfigured ? initializeApp(config) : null
+
+export const auth: Auth | null = app ? getAuth(app) : null
+
+/**
+ * 조회 캐시를 디스크에 둔다 — 홈 화면 PWA를 지하철에서 열어도 시간표가 보인다.
+ * 오프라인 "편집"은 범위 밖이다 (PRD). 탭 매니저는 multiple 을 쓴다 —
+ * 맥에서 탭 두 개를 열어두는 일이 흔한데 single 은 두 번째 탭에서 캐시가 죽는다.
+ */
+export const db: Firestore | null = app
+  ? initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    })
+  : null
 
 export const googleProvider = new GoogleAuthProvider()

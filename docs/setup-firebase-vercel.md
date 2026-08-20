@@ -126,6 +126,23 @@ npm run dev
 
 여기서 실패하면 6번의 `authDomain` 과 5번의 rewrite를 먼저 의심한다.
 
+## 10. Firestore 켜기 ⚠️ 규칙을 먼저 게시한다 (마일스톤 2)
+
+과목·시간표가 저장되는 곳이다. **여기서 "테스트 모드"를 고르면 30일 동안 인터넷의 누구나
+당신의 데이터를 읽고 쓸 수 있다.** 순서대로 하면 그 상태를 거치지 않는다.
+
+1. 왼쪽 **빌드 → Firestore Database** → **데이터베이스 만들기**
+2. 위치: **asia-northeast3 (서울)** — 한 번 정하면 못 바꾼다
+3. 모드: **프로덕션 모드에서 시작** (테스트 모드 아님). 이 상태는 모든 접근을 막는다 — 정상이다
+4. 만들어지면 **규칙** 탭 → 내용을 전부 지우고 저장소의 `firestore.rules` 파일 내용을 붙여넣는다 → **게시**
+5. 규칙 탭의 **Playground(시뮬레이터)** 로 두 번 확인한다:
+   - `/users/<본인 uid>/subjects/x` 읽기 + 인증됨(본인 uid) → **허용**
+   - `/users/somebody-else/subjects/x` 읽기 + 인증됨(본인 uid) → **거부**
+
+   본인 uid는 Authentication → Users 탭에서 복사한다. 두 결과가 모두 나와야 넘어간다.
+
+**색인은 만들지 않아도 된다.** 과목이 10개 남짓이라 정렬을 앱이 직접 한다.
+
 ---
 
 ## 안 되면 볼 것
@@ -138,3 +155,5 @@ npm run dev
 | 맥은 되는데 아이폰 홈 화면만 안 됨 | 6번 `authDomain` 이 `firebaseapp.com` 으로 들어감 |
 | 로그인 후 돌아왔는데 로그아웃 상태 | 5번 rewrite 의 projectId 미치환 |
 | 배포는 됐는데 새로고침하면 404 | `vercel.json` 의 SPA rewrite 누락 |
+| 과목 저장 시 "Missing or insufficient permissions" | 10번 규칙 미게시, 또는 붙여넣기 후 **게시** 안 누름 |
+| 과목 화면이 계속 "불러오는 중" | 10번 Firestore 데이터베이스 자체가 없음 |
