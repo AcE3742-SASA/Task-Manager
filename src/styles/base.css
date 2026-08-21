@@ -31,17 +31,24 @@ body,
   height: 100%;
   overflow: hidden;
 }
-body {
-  position: fixed;
-  inset: 0;
-}
-
-body {
+/* 데스크탑에서 .app(480px) 바깥에 깔리는 크림 격자. 모바일에서는 .app 이 꽉 차 보이지 않는다. */
+#root {
   background-color: var(--cream);
   background-image:
     linear-gradient(to right, rgba(52, 23, 13, 0.055) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(52, 23, 13, 0.055) 1px, transparent 1px);
   background-size: 28px 28px;
+}
+body {
+  position: fixed;
+  inset: 0;
+}
+
+/* iOS standalone 은 theme-color 를 무시하고 **문서 배경색**으로 상태바 띠를 칠한다.
+   여기가 크림이면 띠가 크림, 바로 아래 appbar 는 paper 라 경계선이 생긴다.
+   그래서 문서 배경은 appbar 와 같은 paper 로 두고, 크림 격자는 #root 로 내렸다. */
+body {
+  background-color: var(--paper);
   color: var(--ink);
   font-family: var(--disp);
   line-height: 1.55;

@@ -120,9 +120,10 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  /* 홈 인디케이터 여백을 컨테이너가 아니라 탭이 먹는다.
-     그래야 활성 탭의 색과 칸 구분선이 화면 맨 아래까지 이어진다. */
-  padding: 9px 0 calc(11px + env(safe-area-inset-bottom));
+  /* 홈 인디케이터 여백을 컨테이너가 아니라 탭이 먹는다 — 활성 탭 색과 구분선이
+     화면 맨 아래까지 이어지게. 다만 더하지 않고 max() 로 흡수한다.
+     11px 를 더하면 인디케이터 34px 가 그대로 버튼 높이가 돼 탭이 길어진다. */
+  padding: 9px 0 max(11px, env(safe-area-inset-bottom));
   color: var(--muted);
   border-right: 2px solid rgba(52, 23, 13, 0.18);
   -webkit-tap-highlight-color: transparent;
