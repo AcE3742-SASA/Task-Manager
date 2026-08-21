@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Screen } from './Screen'
 import { SubjectIcon } from './subject-icons'
 import { classDayOf, fromLocalInput, kstLabel, nextDue, toLocalInput, todayEnd } from '../lib/due'
-import { createTask, removeTask, saveTask, KINDS } from '../lib/tasks'
+import { createTask, removeTask, saveTask, KINDS, KIND_EN } from '../lib/tasks'
 import type { Kind, Task } from '../lib/tasks'
 import type { Subject } from '../lib/subjects'
 import { useT } from '../lib/i18n'
@@ -21,7 +21,7 @@ type Props = { uid: string; subjects: Subject[]; task?: Task }
 export function TaskForm({ uid, subjects, task }: Props) {
   const navigate = useNavigate()
   const editing = !!task
-  const { weekStartsOn } = useAppSettings()
+  const { weekStartsOn, lang } = useAppSettings()
   const t = useT()
 
   const [title, setTitle] = useState(task?.title ?? '')
@@ -62,7 +62,12 @@ export function TaskForm({ uid, subjects, task }: Props) {
   }
 
   async function drop() {
-    if (!confirm(`"${task?.title}" 을(를) 삭제한다.`)) return
+    if (
+      !confirm(
+        t(`"${task?.title}" 을(를) 삭제한다.`, `Delete "${task?.title}". This cannot be undone.`),
+      )
+    )
+      return
     setBusy(true)
     try {
       await removeTask(uid, task!.id)
@@ -91,7 +96,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
             className="inp"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="3장 연습문제 풀어오기"
+            placeholder={t('3장 연습문제 풀어오기', 'Ch. 3 practice problems')}
             autoFocus={!editing}
           />
         </div>
@@ -110,7 +115,14 @@ export function TaskForm({ uid, subjects, task }: Props) {
                 {s.name}
               </button>
             ))}
-            {subjects.length === 0 && <span className="hint">과목을 먼저 등록하면 기한이 자동으로 채워진다.</span>}
+            {subjects.length === 0 && (
+              <span className="hint">
+                {t(
+                  '과목을 먼저 등록하면 기한이 자동으로 채워진다.',
+                  'Register a subject first and the due date fills itself in.',
+                )}
+              </span>
+            )}
           </div>
         </div>
 
@@ -121,16 +133,29 @@ export function TaskForm({ uid, subjects, task }: Props) {
               <b>{t('자동 계산된 기한', 'AUTO-FILLED DUE DATE')}</b>
               <br />
               {dueTouched ? (
-                '직접 정한 기한을 쓴다.'
+                t('직접 정한 기한을 쓴다.', 'Using the date you set.')
               ) : subject && subject.slots?.length ? (
-                <>
-                  {subject.name} 다음 주 첫 수업은 <b>{kstLabel(classDayOf(due))}</b>. 기한은 그 전날{' '}
-                  <b>{kstLabel(due)} 23:59</b>. 아래에서 바꿀 수 있음.
-                </>
+                lang === 'en' ? (
+                  <>
+                    Next {subject.name} class is <b>{kstLabel(classDayOf(due), lang)}</b>, so this is
+                    due the evening before — <b>{kstLabel(due, lang)} 23:59</b>. Change it below.
+                  </>
+                ) : (
+                  <>
+                    {subject.name} 다음 주 첫 수업은 <b>{kstLabel(classDayOf(due), lang)}</b>. 기한은
+                    그 전날 <b>{kstLabel(due, lang)} 23:59</b>. 아래에서 바꿀 수 있음.
+                  </>
+                )
               ) : subject ? (
-                <>시간표에 배치된 수업이 없어 일주일 뒤로 잡았다. 아래에서 바꿀 수 있음.</>
+                t(
+                  '시간표에 배치된 수업이 없어 일주일 뒤로 잡았다. 아래에서 바꿀 수 있음.',
+                  'No classes are placed on the timetable, so this is set a week out. Change it below.',
+                )
               ) : (
-                <>과목을 고르면 다음 주 첫 수업 전날로 기한이 자동으로 채워진다.</>
+                t(
+                  '과목을 고르면 다음 주 첫 수업 전날로 기한이 자동으로 채워진다.',
+                  'Pick a subject and the due date fills in as the day before its next class.',
+                )
               )}
             </span>
           </div>
@@ -161,7 +186,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
                 aria-pressed={k === kind}
                 onClick={() => setKind(k)}
               >
-                {k}
+                {lang === 'en' ? (KIND_EN[k] ?? k) : k}
               </button>
             ))}
           </div>
@@ -173,7 +198,10 @@ export function TaskForm({ uid, subjects, task }: Props) {
             className="inp ta"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="교재 3장 1~12번. 손으로 풀고 사진 찍어 제출."
+            placeholder={t(
+              '교재 3장 1~12번. 손으로 풀고 사진 찍어 제출.',
+              'Textbook ch.3 #1-12. Work by hand, photograph, submit.',
+            )}
           />
         </div>
 

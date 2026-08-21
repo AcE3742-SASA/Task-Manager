@@ -6,6 +6,7 @@ import {
   fromLocalInput,
   groupOf,
   kstDate,
+  kstLabel,
   kstYmd,
   monthGrid,
   nextDue,
@@ -169,5 +170,32 @@ describe('달력 격자', () => {
   it('dayNumber 는 왕복한다', () => {
     const d = kstDate(2026, 7, 20)
     expect(kstYmd(dateFromDayNumber(dayNumber(d))).d).toBe(20)
+  })
+})
+
+// lang 인자는 표시 전용이다. 기본값이 'ko' 라 위의 기존 단언들이 그대로 통과해야 하고,
+// 'en' 을 넘겼을 때만 요일과 sub 라벨이 영문으로 바뀌어야 한다.
+describe('formatDue / kstLabel 의 언어', () => {
+  const now = at('2026-08-20T03:00:00Z')
+
+  it('en 은 sub 라벨을 영문으로 준다', () => {
+    expect(formatDue(at('2026-08-20T14:59:00Z'), now, false, 'en').sub).toBe('Today')
+    expect(formatDue(at('2026-08-21T14:59:00Z'), now, false, 'en').sub).toBe('Tomorrow')
+    expect(formatDue(at('2026-08-18T14:59:00Z'), now, false, 'en').sub).toBe('Overdue')
+    expect(formatDue(at('2026-08-19T14:59:00Z'), now, true, 'en').sub).toBe('Done')
+  })
+
+  it('en 은 main 의 요일도 영문으로 준다', () => {
+    expect(formatDue(at('2026-08-24T14:59:00Z'), now, false, 'en').main).toBe('8/24 Mon')
+    expect(formatDue(at('2026-08-24T14:59:00Z'), now, false).main).toBe('8/24 월')
+  })
+
+  it('시각만 나오는 sub 는 언어와 무관하다', () => {
+    expect(formatDue(at('2026-08-24T14:59:00Z'), now, false, 'en').sub).toBe('23:59')
+  })
+
+  it('kstLabel 은 en 에서 영문 요일을 쓴다', () => {
+    expect(kstLabel(at('2026-08-24T14:59:00Z'), 'en')).toBe('8/24 (Mon)')
+    expect(kstLabel(at('2026-08-24T14:59:00Z'))).toBe('8/24 (월)')
   })
 })

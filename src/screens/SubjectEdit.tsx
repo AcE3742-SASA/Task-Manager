@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Screen } from '../components/Screen'
-import { ICON_CATEGORIES, SUBJECT_ICONS } from '../components/subject-icons'
+import { CATEGORY_EN, ICON_CATEGORIES, SUBJECT_ICONS, iconName } from '../components/subject-icons'
+import { useT } from '../lib/i18n'
+import { useAppSettings } from '../lib/settings'
+import type { IconCategory } from '../components/subject-icons'
+import type { Lang } from '../lib/i18n'
 import {
   COLORS,
   SHORT_MAX,
@@ -15,12 +19,15 @@ import type { Subject } from '../lib/subjects'
 export function SubjectEdit({ uid }: { uid: string }) {
   const { id } = useParams()
   const { subjects, loading, error } = useSubjects(uid)
+  const t = useT()
+  const title = t('과목', 'Subject')
 
-  if (error) return <Notice title="과목" body={error} />
-  if (id && loading) return <Notice title="과목" body="불러오는 중…" />
+  if (error) return <Notice title={title} body={error} />
+  if (id && loading) return <Notice title={title} body={t('불러오는 중…', 'Loading…')} />
 
   const existing = id ? subjects.find((s) => s.id === id) : undefined
-  if (id && !existing) return <Notice title="과목" body="없는 과목이다." />
+  if (id && !existing)
+    return <Notice title={title} body={t('없는 과목이다.', 'No such subject.')} />
 
   // key 로 과목이 바뀔 때 폼 상태를 통째로 새로 만든다 — 초기값 동기화 코드를 안 짜는 방법.
   return <Form uid={uid} subject={existing} key={existing?.id ?? 'new'} />
@@ -38,6 +45,8 @@ function Notice({ title, body }: { title: string; body: string }) {
 
 function Form({ uid, subject }: { uid: string; subject?: Subject }) {
   const navigate = useNavigate()
+  const { lang } = useAppSettings()
+  const t = useT()
   const [name, setName] = useState(subject?.name ?? '')
   const [short, setShort] = useState(subject?.short ?? '')
   const [icon, setIcon] = useState(subject?.icon ?? SUBJECT_ICONS[0].id)
@@ -63,8 +72,19 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
 
   async function drop() {
     const n = subject?.slots?.length ?? 0
-    const warn = n > 0 ? `\n시간표에 배치된 ${n}칸도 함께 사라진다.` : ''
-    if (!confirm(`"${subject?.name}" 과목을 삭제한다.${warn}`)) return
+    const warn =
+      n > 0
+        ? t(
+            `\n시간표에 배치된 ${n}칸도 함께 사라진다.`,
+            `\nThe ${n} timetable slots using it go too.`,
+          )
+        : ''
+    if (
+      !confirm(
+        t(`"${subject?.name}" 과목을 삭제한다.${warn}`, `Delete "${subject?.name}".${warn}`),
+      )
+    )
+      return
     setBusy(true)
     try {
       await removeSubject(uid, subject!.id)
@@ -77,10 +97,10 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
 
   return (
     <Screen
-      title={subject ? '과목 편집' : '새 과목'}
+      title={subject ? t('과목 편집', 'Edit subject') : t('새 과목', 'New subject')}
       action={
         <button className="act" onClick={() => navigate('/subjects')}>
-          취소
+          {t('취소', 'Cancel')}
         </button>
       }
     >
@@ -88,24 +108,26 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
         {err && <div className="hint">{err}</div>}
 
         <div className="field">
-          <span className="lbl">과목 이름</span>
+          <span className="lbl">{t('과목 이름', 'Subject name')}</span>
           <input
             className="inp"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="일반물리학I"
+            placeholder={t('일반물리학I', 'General Physics I')}
             autoFocus={!subject}
           />
         </div>
 
         <div className="field">
-          <span className="lbl">줄임말 — 최대 {SHORT_MAX}글자</span>
+          <span className="lbl">
+            {t(`줄임말 — 최대 ${SHORT_MAX}글자`, `Short name — ${SHORT_MAX} chars max`)}
+          </span>
           <input
             className="inp pix"
             value={short}
             maxLength={SHORT_MAX}
             onChange={(e) => setShort(e.target.value.slice(0, SHORT_MAX))}
-            placeholder="일물"
+            placeholder={t('일물', 'PHYS')}
           />
           <span className="limit">
             <span>
@@ -114,26 +136,24 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
             <i>
               <b style={{ width: `${(short.length / SHORT_MAX) * 100}%` }} />
             </i>
-            <span>시간표에 이 이름으로</span>
+            <span>{t('시간표에 이 이름으로', 'Shown on the timetable')}</span>
           </span>
         </div>
 
         <div className="field">
           <span className="lbl">
-            아이콘
-            <span className="counter">
-              {SUBJECT_ICONS.find((i) => i.id === icon)?.name ?? '—'}
-            </span>
+            {t('아이콘', 'Icon')}
+            <span className="counter">{iconName(icon, lang)}</span>
           </span>
           <div className="pickgrid">
             {ICON_CATEGORIES.map((cat) => (
-              <Fragmentish key={cat} cat={cat} icon={icon} onPick={setIcon} />
+              <Fragmentish key={cat} cat={cat} icon={icon} onPick={setIcon} lang={lang} />
             ))}
           </div>
         </div>
 
         <div className="field">
-          <span className="lbl">색</span>
+          <span className="lbl">{t('색', 'Color')}</span>
           <div className="swatches">
             {/* aria-label 로 "#c8a96b" 를 그대로 읽어 주던 자리. 순번이 그보다 낫다. */}
             {COLORS.map((c, i) => (
@@ -141,7 +161,7 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
                 key={c}
                 className={`swatch${c === color ? ' on' : ''}`}
                 style={{ background: c }}
-                aria-label={`색 ${i + 1}`}
+                aria-label={t(`색 ${i + 1}`, `Color ${i + 1}`)}
                 aria-pressed={c === color}
                 onClick={() => setColor(c)}
               />
@@ -150,14 +170,14 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
         </div>
 
         <button className="bigbtn" disabled={!ready || busy} onClick={submit}>
-          {busy ? '저장 중…' : '저장'}
+          {busy ? t('저장 중…', 'Saving…') : t('저장', 'Save')}
         </button>
 
         {subject && (
           <button className="row danger" disabled={busy} onClick={drop}>
             <span className="rl">
-              <b>과목 삭제</b>
-              <em>배치된 시간표 칸도 함께 사라진다</em>
+              <b>{t('과목 삭제', 'Delete subject')}</b>
+              <em>{t('배치된 시간표 칸도 함께 사라진다', 'Its timetable slots go too')}</em>
             </span>
           </button>
         )}
@@ -171,20 +191,22 @@ function Fragmentish({
   cat,
   icon,
   onPick,
+  lang,
 }: {
-  cat: string
+  cat: IconCategory
   icon: string
   onPick: (id: string) => void
+  lang: Lang
 }) {
   return (
     <>
-      <span className="catrow">{cat}</span>
+      <span className="catrow">{lang === 'en' ? CATEGORY_EN[cat] : cat}</span>
       {SUBJECT_ICONS.filter((i) => i.cat === cat).map((i) => (
         <button
           key={i.id}
           className={i.id === icon ? 'on' : ''}
-          title={i.name}
-          aria-label={i.name}
+          title={lang === 'en' ? i.en : i.name}
+          aria-label={lang === 'en' ? i.en : i.name}
           aria-pressed={i.id === icon}
           onClick={() => onPick(i.id)}
         >

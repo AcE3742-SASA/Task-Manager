@@ -1,9 +1,19 @@
 import type { Slot } from './subjects'
+import type { Lang } from './i18n'
 
 /** 한국은 1988년 이후 서머타임이 없다. Intl 이나 날짜 라이브러리를 쓸 이유가 없는 고정 오프셋. */
 const KST = 9 * 60 * 60 * 1000
 const DAY_MS = 86_400_000
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토']
+const WEEKDAY_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+/** formatDue 의 sub 칸. groupOf 의 Group 과 달리 저장되지 않는 표시 전용 값이다. */
+const DUE_SUB_EN: Record<string, string> = {
+  '완료': 'Done',
+  '오늘': 'Today',
+  '내일': 'Tomorrow',
+  '지남': 'Overdue',
+}
 
 /** 0=일요일, 1=월요일. M5 에서 설정값이 붙기 전까지의 기본값. */
 export const DEFAULT_WEEK_START = 1
@@ -63,17 +73,27 @@ export function groupOf(
   return diff <= untilWeekEnd ? '이번 주' : '나중'
 }
 
-/** 시안 01 의 `.due` 두 줄. 가까운 기한은 시각을, 먼 기한은 날짜를 크게 보여준다. */
-export function formatDue(due: Date, now: Date, done: boolean): { main: string; sub: string } {
+/**
+ * 시안 01 의 `.due` 두 줄. 가까운 기한은 시각을, 먼 기한은 날짜를 크게 보여준다.
+ * lang 은 표시에만 쓴다 — 기본값이 'ko' 라 이 함수의 기존 호출부와 테스트는 그대로다.
+ */
+export function formatDue(
+  due: Date,
+  now: Date,
+  done: boolean,
+  lang: Lang = 'ko',
+): { main: string; sub: string } {
   const p = kstParts(due)
-  const date = `${p.m + 1}/${p.d} ${WEEKDAY[p.day]}`
+  const wd = lang === 'en' ? WEEKDAY_EN[p.day] : WEEKDAY[p.day]
+  const sub = (ko: string) => (lang === 'en' ? DUE_SUB_EN[ko] : ko)
+  const date = `${p.m + 1}/${p.d} ${wd}`
   const time = `${String(p.h).padStart(2, '0')}:${String(p.min).padStart(2, '0')}`
-  if (done) return { main: date, sub: '완료' }
+  if (done) return { main: date, sub: sub('완료') }
 
   const diff = kstDayNumber(due) - kstDayNumber(now)
-  if (diff === 0) return { main: time, sub: '오늘' }
-  if (diff === 1) return { main: time, sub: '내일' }
-  if (diff < 0) return { main: date, sub: '지남' }
+  if (diff === 0) return { main: time, sub: sub('오늘') }
+  if (diff === 1) return { main: time, sub: sub('내일') }
+  if (diff < 0) return { main: date, sub: sub('지남') }
   return { main: date, sub: time }
 }
 
@@ -91,9 +111,9 @@ export function fromLocalInput(value: string): Date | null {
 }
 
 /** 자동 기한 안내 문장에 쓰는 "8/31 (월)" 표기. */
-export function kstLabel(d: Date): string {
+export function kstLabel(d: Date, lang: Lang = 'ko'): string {
   const p = kstParts(d)
-  return `${p.m + 1}/${p.d} (${WEEKDAY[p.day]})`
+  return `${p.m + 1}/${p.d} (${lang === 'en' ? WEEKDAY_EN[p.day] : WEEKDAY[p.day]})`
 }
 
 /** 기한(수업 전날 23:59)에서 그 수업일을 되돌린다. */

@@ -3,9 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
 import { EmptyState } from '../components/EmptyState'
 import { IconCalendar } from '../components/icons'
+import { useT } from '../lib/i18n'
+import { useAppSettings } from '../lib/settings'
 import {
   DAYS,
   DAY_LABEL,
+  DAY_LABEL_EN,
   PERIODS,
   byCell,
   cellKey,
@@ -14,6 +17,7 @@ import {
   useSubjects,
 } from '../lib/subjects'
 import type { Day } from '../lib/subjects'
+import type { T } from '../lib/i18n'
 
 /** 배치할 과목과, 그 배치에 함께 붙일 교사·강의실. 칸을 누를 때마다 이 값이 그대로 들어간다. */
 type Paint = { id: string; teacher: string; room: string }
@@ -23,6 +27,9 @@ export function Timetable({ uid }: { uid: string }) {
   const [paint, setPaint] = useState<Paint | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const navigate = useNavigate()
+  const { lang } = useAppSettings()
+  const t = useT()
+  const dayLabel = lang === 'en' ? DAY_LABEL_EN : DAY_LABEL
 
   const cells = byCell(subjects)
   const placed = cells.size
@@ -42,7 +49,7 @@ export function Timetable({ uid }: { uid: string }) {
 
   if (error) {
     return (
-      <Screen title="시간표">
+      <Screen title={t('시간표', 'Timetable')}>
         <div className="form">
           <div className="hint">{error}</div>
         </div>
@@ -52,15 +59,18 @@ export function Timetable({ uid }: { uid: string }) {
 
   if (!loading && subjects.length === 0) {
     return (
-      <Screen title="시간표">
+      <Screen title={t('시간표', 'Timetable')}>
         <EmptyState
           icon={<IconCalendar />}
-          title="배치할 과목이 없다"
-          body="과목을 먼저 등록한다. 연구활동·창의적 체험활동도 과목으로 만들면 된다."
+          title={t('배치할 과목이 없다', 'Nothing to place yet')}
+          body={t(
+            '과목을 먼저 등록한다. 연구활동·창의적 체험활동도 과목으로 만들면 된다.',
+            'Register subjects first. Research and activity blocks work as subjects too.',
+          )}
         />
         <div className="form">
           <Link className="bigbtn" to="/subjects">
-            과목 등록하러 가기
+            {t('과목 등록하러 가기', 'Go register a subject')}
           </Link>
         </div>
       </Screen>
@@ -69,10 +79,10 @@ export function Timetable({ uid }: { uid: string }) {
 
   return (
     <Screen
-      title="시간표"
+      title={t('시간표', 'Timetable')}
       action={
         <button className="act" onClick={() => navigate('/profile')}>
-          {placed}칸
+          {t(`${placed}칸`, `${placed} placed`)}
         </button>
       }
     >
@@ -111,21 +121,23 @@ export function Timetable({ uid }: { uid: string }) {
               className="inp grow"
               value={paint.teacher}
               onChange={(e) => setPaint({ ...paint, teacher: e.target.value })}
-              placeholder="교사"
-              aria-label="교사"
+              placeholder={t('교사', 'Teacher')}
+              aria-label={t('교사', 'Teacher')}
             />
             <input
               className="inp grow"
               value={paint.room}
               onChange={(e) => setPaint({ ...paint, room: e.target.value })}
-              placeholder="강의실"
-              aria-label="강의실"
+              placeholder={t('강의실', 'Room')}
+              aria-label={t('강의실', 'Room')}
             />
           </div>
         ) : (
           <div className="hint">
-            과목을 고른 뒤 칸을 누르면 배치된다. 고른 과목은 그대로 남으니 연속 교시는 계속 누르면
-            된다. 같은 칸을 다시 누르면 지워진다.
+            {t(
+              '과목을 고른 뒤 칸을 누르면 배치된다. 고른 과목은 그대로 남으니 연속 교시는 계속 누르면 된다. 같은 칸을 다시 누르면 지워진다.',
+              'Pick a subject, then tap cells to place it. The pick stays selected, so tap straight through consecutive periods. Tap a filled cell again to clear it.',
+            )}
           </div>
         )}
 
@@ -135,12 +147,12 @@ export function Timetable({ uid }: { uid: string }) {
           <span className="hd" />
           {DAYS.map((d) => (
             <span className="hd" key={d}>
-              {DAY_LABEL[d]}
+              {dayLabel[d]}
             </span>
           ))}
 
           {PERIODS.map((p) => (
-            <Row key={p} period={p} cells={cells} onTap={tap} />
+            <Row key={p} period={p} cells={cells} onTap={tap} dayLabel={dayLabel} t={t} />
           ))}
         </div>
       </div>
@@ -152,10 +164,14 @@ function Row({
   period,
   cells,
   onTap,
+  dayLabel,
+  t,
 }: {
   period: number
   cells: ReturnType<typeof byCell>
   onTap: (day: Day, period: number) => void
+  dayLabel: Record<Day, string>
+  t: T
 }) {
   return (
     <>
@@ -166,7 +182,10 @@ function Row({
           <button
             key={d}
             className={`cell${at ? '' : ' free'}`}
-            aria-label={`${DAY_LABEL[d]} ${period}교시 — ${at?.subject.name ?? '빈 칸'}`}
+            aria-label={t(
+              `${dayLabel[d]} ${period}교시 — ${at?.subject.name ?? '빈 칸'}`,
+              `${dayLabel[d]} period ${period} — ${at?.subject.name ?? 'empty'}`,
+            )}
             style={at ? { background: at.subject.color, color: onColor(at.subject.color) } : undefined}
             onClick={() => onTap(d, period)}
           >

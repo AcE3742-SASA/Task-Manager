@@ -12,6 +12,7 @@ import { SubjectEdit } from './screens/SubjectEdit'
 import { Subjects } from './screens/Subjects'
 import { TaskEdit } from './screens/TaskEdit'
 import { Timetable } from './screens/Timetable'
+import { browserLang, makeT } from './lib/i18n'
 import type { User } from 'firebase/auth'
 
 function Shell({ user }: { user: User }) {
@@ -42,7 +43,8 @@ function Shell({ user }: { user: User }) {
 export function App() {
   const { user, loading, error } = useAuth()
 
-  if (loading) return <div className="boot">불러오는 중…</div>
+  // 로그인 전이라 계정 언어 설정이 아직 없다. SignIn 과 같은 규칙을 쓴다.
+  if (loading) return <div className="boot">{makeT(browserLang())('불러오는 중…', 'Loading…')}</div>
   // M1 의 dev 미리보기 우회는 여기서 없앴다. Firestore 가 붙은 뒤로는 가짜 uid 로 읽을 데이터가
   // 없어 화면이 어차피 비고, db 가 null 인 분기를 화면마다 들고 다니게 만든다.
   if (!user) return <SignIn error={error} />

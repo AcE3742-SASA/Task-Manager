@@ -1,5 +1,8 @@
 import { SubjectIcon } from './subject-icons'
 import { formatDue } from '../lib/due'
+import { useT } from '../lib/i18n'
+import { useAppSettings } from '../lib/settings'
+import { KIND_EN } from '../lib/tasks'
 import type { Subject } from '../lib/subjects'
 import type { Task } from '../lib/tasks'
 
@@ -20,7 +23,9 @@ const Check = () => (
 )
 
 export function TaskRow({ task, subject, now, urgent, onOpen, onToggle }: Props) {
-  const due = formatDue(task.due, now, task.done)
+  const { lang } = useAppSettings()
+  const t = useT()
+  const due = formatDue(task.due, now, task.done, lang)
   const cls = ['task', task.done && 'done', !task.done && urgent && 'urgent'].filter(Boolean).join(' ')
 
   return (
@@ -32,8 +37,8 @@ export function TaskRow({ task, subject, now, urgent, onOpen, onToggle }: Props)
         <span className="txt">
           <b>{task.title}</b>
           <em>
-            <s>{task.kind}</s>
-            {subject?.name ?? '과목 없음'}
+            <s>{lang === 'en' ? (KIND_EN[task.kind] ?? task.kind) : task.kind}</s>
+            {subject?.name ?? t('과목 없음', 'No subject')}
           </em>
         </span>
         <span className="due">
@@ -41,7 +46,11 @@ export function TaskRow({ task, subject, now, urgent, onOpen, onToggle }: Props)
           <u>{due.sub}</u>
         </span>
       </button>
-      <button className="box" onClick={onToggle} aria-label={task.done ? '완료 취소' : '완료'}>
+      <button
+        className="box"
+        onClick={onToggle}
+        aria-label={task.done ? t('완료 취소', 'Mark not done') : t('완료', 'Mark done')}
+      >
         {task.done && <Check />}
       </button>
     </div>

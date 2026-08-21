@@ -13,6 +13,14 @@ import { db } from './firebase'
 import { normalizeName } from './subjects'
 
 export const KINDS = ['과제', '수행평가', '시험', '개인'] as const
+
+/** KINDS 는 Firestore 에 저장되는 값이라 건드리지 않는다. 화면에 쓸 영문만 따로 둔다. */
+export const KIND_EN: Record<string, string> = {
+  '과제': 'Homework',
+  '수행평가': 'Assessment',
+  '시험': 'Exam',
+  '개인': 'Personal',
+}
 export type Kind = (typeof KINDS)[number]
 
 /** 사용자가 폼에서 만지는 값. */

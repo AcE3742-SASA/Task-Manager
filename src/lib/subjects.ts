@@ -5,6 +5,13 @@ import { db } from './firebase'
 export type Day = 1 | 2 | 3 | 4 | 5
 export const DAYS: Day[] = [1, 2, 3, 4, 5]
 export const DAY_LABEL: Record<Day, string> = { 1: '월', 2: '화', 3: '수', 4: '목', 5: '금' }
+export const DAY_LABEL_EN: Record<Day, string> = {
+  1: 'Mon',
+  2: 'Tue',
+  3: 'Wed',
+  4: 'Thu',
+  5: 'Fri',
+}
 /** 시간표 양식에는 10교시 칸도 있지만 실제로 배정된 적이 없어 9까지만 그린다. */
 export const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
