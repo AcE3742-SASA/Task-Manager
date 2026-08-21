@@ -66,7 +66,7 @@ export function List({ uid }: { uid: string }) {
       {grouped.map(({ group, items }) => (
         <section key={group}>
           <div className="grp">
-            <h5>{t(group, EN_GROUP[group])}</h5>
+            <h2>{t(group, EN_GROUP[group])}</h2>
             <span className="cnt">{items.length}</span>
             <span className="rule" />
           </div>

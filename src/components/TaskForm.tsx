@@ -103,6 +103,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
               <button
                 key={s.id}
                 className={`chip${s.id === subjectId ? ' on' : ''}`}
+                aria-pressed={s.id === subjectId}
                 onClick={() => setSubjectId(s.id === subjectId ? null : s.id)}
               >
                 <SubjectIcon id={s.icon} />
@@ -157,6 +158,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
               <button
                 key={k}
                 className={`chip sm${k === kind ? ' on' : ''}`}
+                aria-pressed={k === kind}
                 onClick={() => setKind(k)}
               >
                 {k}

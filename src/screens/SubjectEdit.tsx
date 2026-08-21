@@ -121,7 +121,9 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
         <div className="field">
           <span className="lbl">
             아이콘
-            <span className="counter">40개 중 1개</span>
+            <span className="counter">
+              {SUBJECT_ICONS.find((i) => i.id === icon)?.name ?? '—'}
+            </span>
           </span>
           <div className="pickgrid">
             {ICON_CATEGORIES.map((cat) => (
@@ -132,13 +134,15 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
 
         <div className="field">
           <span className="lbl">색</span>
-          <div className="chips">
-            {COLORS.map((c) => (
+          <div className="swatches">
+            {/* aria-label 로 "#c8a96b" 를 그대로 읽어 주던 자리. 순번이 그보다 낫다. */}
+            {COLORS.map((c, i) => (
               <button
                 key={c}
                 className={`swatch${c === color ? ' on' : ''}`}
                 style={{ background: c }}
-                aria-label={c}
+                aria-label={`색 ${i + 1}`}
+                aria-pressed={c === color}
                 onClick={() => setColor(c)}
               />
             ))}
@@ -181,6 +185,7 @@ function Fragmentish({
           className={i.id === icon ? 'on' : ''}
           title={i.name}
           aria-label={i.name}
+          aria-pressed={i.id === icon}
           onClick={() => onPick(i.id)}
         >
           <svg viewBox="0 0 24 24">{i.d}</svg>

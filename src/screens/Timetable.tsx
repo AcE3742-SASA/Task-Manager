@@ -84,6 +84,7 @@ export function Timetable({ uid }: { uid: string }) {
               <button
                 key={s.id}
                 className={`chip sm${on ? ' on' : ''}`}
+                aria-pressed={on}
                 style={on ? undefined : { background: s.color, color: onColor(s.color) }}
                 onClick={() =>
                   setPaint(
@@ -107,18 +108,18 @@ export function Timetable({ uid }: { uid: string }) {
         {paint ? (
           <div className="chips">
             <input
-              className="inp"
-              style={{ flex: 1, minWidth: 0 }}
+              className="inp grow"
               value={paint.teacher}
               onChange={(e) => setPaint({ ...paint, teacher: e.target.value })}
               placeholder="교사"
+              aria-label="교사"
             />
             <input
-              className="inp"
-              style={{ flex: 1, minWidth: 0 }}
+              className="inp grow"
               value={paint.room}
               onChange={(e) => setPaint({ ...paint, room: e.target.value })}
               placeholder="강의실"
+              aria-label="강의실"
             />
           </div>
         ) : (
@@ -165,6 +166,7 @@ function Row({
           <button
             key={d}
             className={`cell${at ? '' : ' free'}`}
+            aria-label={`${DAY_LABEL[d]} ${period}교시 — ${at?.subject.name ?? '빈 칸'}`}
             style={at ? { background: at.subject.color, color: onColor(at.subject.color) } : undefined}
             onClick={() => onTap(d, period)}
           >

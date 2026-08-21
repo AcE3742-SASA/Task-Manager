@@ -35,5 +35,11 @@ export function useSettings(uid: string): Settings {
     )
   }, [uid])
 
+  // index.html 의 lang="ko" 는 고정값이다. 설정을 영어로 바꿔도 그대로라
+  // 스크린리더가 영어 문장을 한국어 음성으로 읽었다. 여기서 한 번만 맞춰 준다.
+  useEffect(() => {
+    document.documentElement.lang = settings.lang
+  }, [settings.lang])
+
   return settings
 }

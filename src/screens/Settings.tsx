@@ -19,7 +19,12 @@ function Seg<T extends string | number>({
   return (
     <span className="seg">
       {options.map((o) => (
-        <button key={String(o.v)} className={o.v === value ? 'on' : ''} onClick={() => onPick(o.v)}>
+        <button
+          key={String(o.v)}
+          className={o.v === value ? 'on' : ''}
+          aria-pressed={o.v === value}
+          onClick={() => onPick(o.v)}
+        >
           {o.label}
         </button>
       ))}

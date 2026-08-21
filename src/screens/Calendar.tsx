@@ -62,7 +62,7 @@ export function Calendar({ uid }: { uid: string }) {
 
   const title =
     mode === 'month'
-      ? `${cur.y}. ${String(cur.m + 1).padStart(2, '0')}`
+      ? `${cur.y}.${String(cur.m + 1).padStart(2, '0')}`
       : `${cur.m + 1}/${cur.d} ${t('주', 'week')}`
 
   return (
@@ -70,10 +70,18 @@ export function Calendar({ uid }: { uid: string }) {
       title={t('달력', 'Calendar')}
       action={
         <span className="seg">
-          <button className={mode === 'month' ? 'on' : ''} onClick={() => zoom('month')}>
+          <button
+            className={mode === 'month' ? 'on' : ''}
+            aria-pressed={mode === 'month'}
+            onClick={() => zoom('month')}
+          >
             {t('월간', 'Month')}
           </button>
-          <button className={mode === 'week' ? 'on' : ''} onClick={() => zoom('week')}>
+          <button
+            className={mode === 'week' ? 'on' : ''}
+            aria-pressed={mode === 'week'}
+            onClick={() => zoom('week')}
+          >
             {t('주간', 'Week')}
           </button>
         </span>
@@ -82,7 +90,7 @@ export function Calendar({ uid }: { uid: string }) {
       <div className="cal">
         <div className="calhead">
           <b>{title}</b>
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <span className="calnav">
             <button className="step" onClick={() => step(-1)} aria-label={t('이전', 'Previous')}>
               ‹
             </button>
@@ -101,6 +109,7 @@ export function Calendar({ uid }: { uid: string }) {
             ))}
             {days.map((cell) => {
               const n = dayNumber(cell.date)
+              const q = kstYmd(cell.date)
               const items = perDay.get(n) ?? []
               const cls = [
                 'day',
@@ -111,8 +120,17 @@ export function Calendar({ uid }: { uid: string }) {
                 .filter(Boolean)
                 .join(' ')
               return (
-                <button key={n} className={cls} onClick={() => setPicked(n)}>
-                  {kstYmd(cell.date).d}
+                <button
+                  key={n}
+                  className={cls}
+                  aria-pressed={n === picked}
+                  aria-label={t(
+                    `${q.m + 1}월 ${q.d}일 · 마감 ${items.length}건`,
+                    `${q.m + 1}/${q.d} · ${items.length} due`,
+                  )}
+                  onClick={() => setPicked(n)}
+                >
+                  {q.d}
                   <span className="dots2">
                     {items.slice(0, MAX_DOTS).map((task) => (
                       <i
@@ -135,14 +153,24 @@ export function Calendar({ uid }: { uid: string }) {
             {days.map((cell) => {
               const n = dayNumber(cell.date)
               const p = kstYmd(cell.date)
+              const count = (perDay.get(n) ?? []).length
               const cls = ['d', n === dayNumber(today) && 'today', n === picked && 'on']
                 .filter(Boolean)
                 .join(' ')
               return (
-                <button key={n} className={cls} onClick={() => setPicked(n)}>
+                <button
+                  key={n}
+                  className={cls}
+                  aria-pressed={n === picked}
+                  aria-label={t(
+                    `${p.m + 1}월 ${p.d}일 · 마감 ${count}건`,
+                    `${p.m + 1}/${p.d} · ${count} due`,
+                  )}
+                  onClick={() => setPicked(n)}
+                >
                   <span>{wd[p.day]}</span>
                   <span className="n">{p.d}</span>
-                  <span className="c">{(perDay.get(n) ?? []).length}</span>
+                  <span className="c">{count || ''}</span>
                 </button>
               )
             })}
@@ -151,7 +179,7 @@ export function Calendar({ uid }: { uid: string }) {
       </div>
 
       <div className="grp">
-        <h5>{labelFor(picked, t)}</h5>
+        <h2>{labelFor(picked, t)}</h2>
         <span className="cnt">{shown.length}</span>
         <span className="rule" />
       </div>

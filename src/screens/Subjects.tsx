@@ -40,9 +40,11 @@ export function Subjects({ uid }: { uid: string }) {
         />
       )}
 
-      <span className="ttlbl">
-        과목 {subjects.length} · 배치된 칸 {slots}
-      </span>
+      {subjects.length > 0 && (
+        <span className="ttlbl">
+          과목 {subjects.length} · 배치된 칸 {slots}
+        </span>
+      )}
       <div className="rows">
         {subjects.map((s) => (
           <Link className="row" key={s.id} to={`/subjects/${s.id}`}>
