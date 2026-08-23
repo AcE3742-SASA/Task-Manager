@@ -7,6 +7,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // push 이벤트 핸들러를 넣으려면 서비스워커를 우리가 써야 한다.
+      // navigateFallbackDenylist 는 src/sw.ts 안으로 옮겨 갔다.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       includeAssets: ['apple-touch-icon.png', 'fonts/*.woff2'],
       manifest: {
         name: 'SASA 할 일',
@@ -25,10 +30,8 @@ export default defineConfig({
           { src: '/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,woff2,png,svg}'],
-        // 인증 핸들러는 SW가 가로채면 안 된다 — 프록시된 Firebase 응답이 굳으면 로그인이 조용히 깨진다.
-        navigateFallbackDenylist: [/^\/__\/auth\//],
       },
     }),
   ],
