@@ -13,6 +13,15 @@ export type NotifyKind = 'morning' | 'evening'
 /** 0~23 시(KST). null 이면 그 알림을 끈다. */
 export type Notify = { morningHour: number | null; eveningHour: number | null }
 
+/**
+ * settings.ts 가 아니라 여기 있어야 한다 — Vercel 함수(api/notify.ts)가 이 값을
+ * 읽는데, settings.ts 는 firebase.ts 를 끌고 오고 firebase.ts 는 모듈 최상단에서
+ * import.meta.env 를 읽는다. import.meta.env 는 Vite 가 빌드 타임에 주입하는
+ * 값이라 Vercel 의 순수 Node 런타임에는 없다 — 있으면 함수가 콜드 스타트마다
+ * 죽는다. "정리한답시고" settings.ts 로 다시 옮기지 말 것.
+ */
+export const DEFAULT_NOTIFY: Notify = { morningHour: 7, eveningHour: 21 }
+
 const KST_MS = 9 * 3600_000
 
 export const kstHour = (now: Date) =>

@@ -12,14 +12,18 @@
   },
   "dependencies": {
     "firebase": "^11.1.0",
+    "firebase-admin": "^14.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0"
+    "react-router-dom": "^6.28.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/web-push": "^3.6.4",
+    "@vercel/node": "^7.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^6.0.3",
