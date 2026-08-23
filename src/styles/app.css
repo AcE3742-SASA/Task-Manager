@@ -872,6 +872,33 @@
   color: var(--cream);
 }
 
+/* ─── 시각 선택 (알림). 코드베이스 첫 select 라 .inp 의 규칙을 줄여 옮겼다. ─── */
+.hourpick {
+  font-family: var(--pix);
+  font-size: 11px;
+  border: var(--b2);
+  background-color: var(--paper);
+  color: var(--ink);
+  padding: 6px 26px 6px 8px;
+  /* --tap 밑으로 떨어지면 이 화면에서 유일하게 이거보다 작은 탭 타깃이 된다. */
+  min-height: var(--tap);
+  flex: none;
+  /* iOS 가 select 를 제멋대로 둥글게 만든다. 모서리 0 이 이 디자인의 전부다. */
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  /* appearance: none 이 네이티브 화살표를 지운다 — 안 그리면 눌러도 되는 상자인지
+     알 길이 없다. 잉크색 캐럿을 직접 그린다. */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+    linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) center,
+    calc(100% - 12px) center;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
 /* ─── 달력 ─── */
 .cal {
   padding: 12px var(--gut) 14px;

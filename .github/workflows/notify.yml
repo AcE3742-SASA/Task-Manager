@@ -1,0 +1,39 @@
+# 알림 스케줄러.
+#
+# Vercel Hobby 의 cron 은 하루 1회 빈도가 한계다. 알림 시각을 Settings 에서
+# 시간 단위로 고를 수 있게 만들었으니 스케줄러가 매시 돌면서 "지금이 이 사용자의
+# 알림 시각인가"를 걸러야 해서, Vercel Pro($20/월) 대신 여기로 우회했다.
+# 배경: docs/superpowers/specs/2026-08-23-release2-notifications-design.md
+#
+# 필요한 설정 (레포 Settings → Secrets and variables → Actions):
+#   Secrets   → CRON_SECRET  : Vercel 환경변수와 같은 값이어야 한다
+#   Variables → NOTIFY_URL   : https://<배포주소>/api/notify
+name: notify
+
+on:
+  schedule:
+    # 매시 정각(UTC). 함수가 KST 로 환산해 판정하므로 UTC 로 둬도 된다.
+    # GitHub 은 이 스케줄을 5~20분 늦게 실행할 수 있다. 알림 성격상 무방하다.
+    - cron: '0 * * * *'
+  # 실기기 수신 확인용 수동 발사.
+  workflow_dispatch:
+
+jobs:
+  fire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /api/notify
+        run: |
+          if [ -z "${{ vars.NOTIFY_URL }}" ]; then
+            echo "NOTIFY_URL 레포 variable 이 없다. Settings → Variables 에 등록할 것."
+            exit 1
+          fi
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ vars.NOTIFY_URL }}")
+          echo "HTTP $code"
+          cat /tmp/out.json
+          echo
+          # 401 이면 CRON_SECRET 이 Vercel 쪽과 어긋난 것이고,
+          # 500 이면 대개 환경변수가 빠져 함수가 모듈 로드에서 죽은 것이다.
+          test "$code" = "200"
