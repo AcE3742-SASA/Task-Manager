@@ -40,6 +40,20 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
  */
 const idOf = (endpoint: string) => endpoint.split('/').pop() ?? endpoint.slice(-64)
 
+/**
+ * 기존 구독이 지금의 VAPID_PUBLIC 으로 만들어졌는지 바이트 단위로 본다.
+ * VAPID 키를 재발급하면 이전 구독은 브라우저 쪽엔 그대로 살아있지만, push 서비스가
+ * 새 private key 서명을 거부해 발송이 실패한다 — 이 실패는 서버에서만 보이고
+ * 로컬에서는 재현이 안 되므로, subscribe 시점에 미리 걸러낸다.
+ */
+function sameKeyBytes(a: ArrayBuffer | null, b: Uint8Array): boolean {
+  if (!a) return false
+  const av = new Uint8Array(a)
+  if (av.length !== b.length) return false
+  for (let i = 0; i < av.length; i++) if (av[i] !== b[i]) return false
+  return true
+}
+
 const subRef = (uid: string, endpoint: string) => {
   if (!db) throw new Error('Firestore 가 설정되지 않았다')
   return doc(db, 'users', uid, 'pushSubs', idOf(endpoint))
@@ -64,12 +78,18 @@ export async function subscribeThisDevice(uid: string): Promise<void> {
   if (granted !== 'granted') throw new Error(granted) // 'denied' | 'default'
 
   const reg = await navigator.serviceWorker.ready
-  const sub =
-    (await reg.pushManager.getSubscription()) ??
-    (await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
-    }))
+  const currentKey = urlBase64ToUint8Array(VAPID_PUBLIC)
+
+  let sub = await reg.pushManager.getSubscription()
+  // 기존 구독이 지금 키로 만든 게 아니면 재사용하지 않는다 — 위 sameKeyBytes 주석 참고.
+  if (sub && !sameKeyBytes(sub.options.applicationServerKey, currentKey)) {
+    await sub.unsubscribe()
+    sub = null
+  }
+  sub ??= await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: currentKey,
+  })
 
   const json = sub.toJSON()
   if (!json.keys?.p256dh || !json.keys?.auth) throw new Error('nokeys')
@@ -77,6 +97,7 @@ export async function subscribeThisDevice(uid: string): Promise<void> {
   await setDoc(subRef(uid, sub.endpoint), {
     endpoint: sub.endpoint,
     keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+    vapid: VAPID_PUBLIC,
     ua: navigator.userAgent,
     createdAt: Timestamp.now(),
   })
@@ -87,8 +108,10 @@ export async function unsubscribeThisDevice(uid: string): Promise<void> {
   const reg = await navigator.serviceWorker.ready
   const sub = await reg.pushManager.getSubscription()
   if (!sub) return
-  const ref = subRef(uid, sub.endpoint)
+  const endpoint = sub.endpoint // unsubscribe 뒤엔 sub 을 못 믿으니 먼저 뽑아둔다
+  // 구독 해제를 제일 먼저 끝낸다 — PushManager 가 구독 상태의 authority 다.
+  // 아래 Firestore 정리가 던져도(db 미설정 등) 브라우저는 이미 안 받는 상태다.
   await sub.unsubscribe()
-  // 구독 해제가 먼저다. Firestore 삭제가 실패해도 브라우저는 이미 안 받는다.
+  const ref = subRef(uid, endpoint)
   if ((await getDoc(ref)).exists()) await deleteDoc(ref)
 }
