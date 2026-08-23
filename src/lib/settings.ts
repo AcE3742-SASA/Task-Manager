@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Lang } from './i18n'
 import type { Notify } from './notify'
@@ -33,15 +33,13 @@ export function saveSettings(uid: string, patch: Partial<Settings>) {
 }
 
 /**
- * notify 는 중첩 객체다. saveSettings(uid, { notify: {...} }) 로 부분 저장하면
- * merge:true 여도 notify 통째로 교체돼서 아침만 바꿔도 저녁 값이 날아간다.
- * dot-path 로 쓰면 지정한 키만 바뀐다.
+ * merge:true 는 중첩 맵도 granular 하게 병합한다 — 아침만 넘겨도 저녁 값은
+ * 손대지 않는다 (빈 맵을 넘길 때만 통째로 갈린다).
+ * updateDoc 의 dot-path 도 같은 일을 하지만 문서가 없으면 던진다.
+ * 설정을 한 번도 안 건드린 계정에는 이 문서가 아직 없다.
  */
-export function saveNotify(uid: string, patch: Partial<Notify>) {
-  const dotted: Record<string, number | null> = {}
-  for (const [k, v] of Object.entries(patch)) dotted[`notify.${k}`] = v
-  return updateDoc(ref(uid), dotted)
-}
+export const saveNotify = (uid: string, patch: Partial<Notify>) =>
+  setDoc(ref(uid), { notify: patch }, { merge: true })
 
 export const SettingsContext = createContext<Settings>(DEFAULT_SETTINGS)
 
