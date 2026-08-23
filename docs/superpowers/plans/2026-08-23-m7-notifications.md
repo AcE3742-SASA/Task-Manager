@@ -520,8 +520,10 @@ Expected: 빌드 성공, `dist/sw.js` 존재, `__WB_MANIFEST` 가 **0건**(빌�
 
 - [ ] **Step 6: denylist 가 산출물에 들어갔는지 확인한다**
 
-Run: `grep -o "__/auth" dist/sw.js | head -1`
-Expected: `__/auth` 가 출력된다. 안 나오면 denylist가 빌드에서 증발한 것이므로 Step 2로 돌아간다.
+Run: `grep -o 'denylist:\[[^]]*\]' dist/sw.js`
+Expected: `denylist:[/^\/__\/auth\//,/^\/api\//]` 가 출력된다. 안 나오면 denylist가 빌드에서 증발한 것이므로 Step 2로 돌아간다.
+
+> 평문 `grep -o "__/auth"` 로는 안 잡힌다. esbuild 가 정규식 리터럴의 이스케이프된 슬래시(`\/`)를 그대로 두기 때문이다. 없는 게 아니라 패턴이 안 맞는 것이다.
 
 - [ ] **Step 7: 로컬에서 로그인 왕복을 확인한다**
 
