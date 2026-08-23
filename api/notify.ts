@@ -28,7 +28,7 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE ?? '',
 )
 
-type SubDoc = { endpoint: string; keys: { p256dh: string; auth: string } }
+type SubDoc = { endpoint: string; keys: { p256dh: string; auth: string }; vapid?: string }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.headers.authorization !== `Bearer ${SECRET}`) {
@@ -80,6 +80,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       for (const kind of kinds) {
         const payload = JSON.stringify(notifyCopy(kind, s.lang ?? 'ko', counts))
         for (const sub of list) {
+          // VAPID 키를 재발급하면 push 서비스는 410 이 아니라 403(서명 불일치)을 준다 —
+          // 기존 404/410 가지치기가 못 잡는 유일한 죽은 case라 여기서 미리 걸러 지운다.
+          // vapid 필드가 아예 없는 문서는 이 필드가 생기기 전 것이니 마찬가지로 죽은 것으로 본다.
+          if (!sub.data.vapid || sub.data.vapid !== process.env.VAPID_PUBLIC) {
+            await db.doc(`users/${uid}/pushSubs/${sub.id}`).delete()
+            pruned++
+            continue
+          }
           try {
             await webpush.sendNotification(
               { endpoint: sub.data.endpoint, keys: sub.data.keys },

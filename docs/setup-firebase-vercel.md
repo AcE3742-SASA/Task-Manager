@@ -53,8 +53,10 @@ Safari가 같은 사이트로 인식하게 만든다. 아이폰 PWA에서 로그
 
 ## 6. 환경변수 등록 ⚠️ 여기가 함정
 
-Vercel 프로젝트 → **Settings → Environment Variables** 에 6개를 넣는다.
-Production · Preview · Development 셋 다 체크한다.
+Vercel 프로젝트 → **Settings → Environment Variables** 에 아래 표의 값들을 전부 넣는다.
+Production · Preview · Development 셋 다 체크한다. 하나라도 빠지면 로그인 화면에
+"FIREBASE 설정 없음"이 뜨거나, `/api/notify` 가 500 을 내거나, 설정 화면에
+"VAPID 키가 설정되지 않았다"가 뜬다.
 
 | 이름 | 값 |
 |---|---|
@@ -64,10 +66,38 @@ Production · Preview · Development 셋 다 체크한다.
 | `VITE_FIREBASE_STORAGE_BUCKET` | `storageBucket` |
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | `messagingSenderId` |
 | `VITE_FIREBASE_APP_ID` | `appId` |
+| `VITE_VAPID_PUBLIC` | VAPID 공개키 (아래에서 만든다) — 클라이언트 빌드용 |
+| `VAPID_PUBLIC` | 위와 같은 값 — 서버리스 함수(`api/notify.ts`)용 |
+| `VAPID_PRIVATE` | VAPID 비밀키 — 서버 전용, `VITE_` 접두사 절대 안 붙인다 |
+| `VAPID_SUBJECT` | `mailto:본인이메일` 형식 |
+| `FIREBASE_SERVICE_ACCOUNT` | 서비스 계정 JSON 전체 (아래에서 받는다) |
+| `CRON_SECRET` | 무작위 문자열. **GitHub 저장소 시크릿에도 같은 값을 등록해야 한다** (11번) |
 
 **`VITE_FIREBASE_AUTH_DOMAIN` 만 firebaseConfig 값과 다르다.** Firebase가 알려주는
 `xxx.firebaseapp.com` 이 아니라 **Vercel 배포 주소**를 넣는다. 5번의 rewrite와 짝이다.
 여기에 `firebaseapp.com` 을 넣으면 맥에서는 로그인이 되고 아이폰 홈 화면에서만 안 된다.
+
+**VAPID 키페어 만들기**:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+나오는 Public Key 는 `VITE_VAPID_PUBLIC` 과 `VAPID_PUBLIC` 두 곳에, Private Key 는
+`VAPID_PRIVATE` 에 넣는다. 같은 키를 두 변수 이름으로 중복 등록하는 게 맞다 — 하나는
+Vite 빌드가 클라이언트에 넣는 값이고 하나는 서버리스 함수가 읽는 값이라 접두사 규칙이 다르다.
+
+**`FIREBASE_SERVICE_ACCOUNT` 받기**: Firebase 콘솔 → **프로젝트 설정 → 서비스 계정** →
+**새 비공개 키 생성**. 다운로드된 JSON 파일 내용 전체를 값으로 붙여넣는다.
+
+**`CRON_SECRET` 만들기**:
+
+```bash
+openssl rand -hex 32
+```
+
+이 값은 **두 군데**에 들어간다 — Vercel 환경변수(위 표)와 GitHub Actions 시크릿(11번).
+하나만 맞으면 cron 호출이 401 로 거부된다.
 
 넣은 뒤 Vercel에서 **Redeploy** (환경변수는 재배포해야 반영된다).
 
@@ -143,6 +173,18 @@ npm run dev
 
 **색인은 만들지 않아도 된다.** 과목이 10개 남짓이라 정렬을 앱이 직접 한다.
 
+## 11. GitHub Actions cron 설정
+
+매시 정각에 `/api/notify` 를 호출하는 워크플로가 필요로 하는 값 둘이다.
+
+1. GitHub 저장소 → **Settings → Secrets and variables → Actions**
+2. **Secrets** 탭 → **New repository secret** → 이름 `CRON_SECRET`, 값은 6번에서
+   Vercel 에 넣은 것과 **완전히 같은 값**
+3. **Variables** 탭 → **New repository variable** → 이름 `NOTIFY_URL`, 값
+   `https://<배포주소>/api/notify` (예: `https://sasa-task-manager.vercel.app/api/notify`)
+
+시크릿과 변수를 헷갈리지 않는다 — `CRON_SECRET` 은 Secrets 탭, `NOTIFY_URL` 은 Variables 탭이다.
+
 ---
 
 ## 안 되면 볼 것
@@ -157,3 +199,6 @@ npm run dev
 | 배포는 됐는데 새로고침하면 404 | `vercel.json` 의 SPA rewrite 누락 |
 | 과목 저장 시 "Missing or insufficient permissions" | 10번 규칙 미게시, 또는 붙여넣기 후 **게시** 안 누름 |
 | 과목 화면이 계속 "불러오는 중" | 10번 Firestore 데이터베이스 자체가 없음 |
+| 설정 화면에 "VAPID 키가 설정되지 않았다" | `VITE_VAPID_PUBLIC` 미등록, 또는 등록 후 재배포 안 함 |
+| `/api/notify` 가 500 | `VAPID_PRIVATE` · `VAPID_SUBJECT` · `FIREBASE_SERVICE_ACCOUNT` 중 하나 미등록 |
+| cron 이 401 | 11번 GitHub `CRON_SECRET` 이 Vercel 값과 다름 |

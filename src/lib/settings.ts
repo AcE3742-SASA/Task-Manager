@@ -5,11 +5,6 @@ import type { Lang } from './i18n'
 import { DEFAULT_NOTIFY } from './notify'
 import type { Notify } from './notify'
 
-// api/notify.ts 도 이 상수가 필요해서 notify.ts (순수 모듈) 로 옮겼다.
-// 여기서는 재수출만 한다 — 기존에 settings.ts 에서 이걸 import 하던 코드가
-// 안 깨지게.
-export { DEFAULT_NOTIFY }
-
 /** 0 = 일요일, 1 = 월요일. "이번 주"의 경계와 자동 기한 계산이 함께 읽는다. */
 export type Settings = { weekStartsOn: 0 | 1; lang: Lang; notify: Notify }
 

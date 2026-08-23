@@ -44,12 +44,10 @@ const HOURS = Array.from({ length: 24 }, (_, h) => h)
 
 function HourPick({
   value,
-  disabled,
   label,
   onPick,
 }: {
   value: number | null
-  disabled: boolean
   label: string
   onPick: (v: number | null) => void
 }) {
@@ -58,7 +56,6 @@ function HourPick({
     <select
       className="hourpick"
       value={value === null ? 'off' : String(value)}
-      disabled={disabled}
       aria-label={label}
       onChange={(e) => onPick(e.target.value === 'off' ? null : Number(e.target.value))}
     >
@@ -156,7 +153,6 @@ export function Settings({ uid }: { uid: string }) {
           </span>
           <HourPick
             value={notify.morningHour}
-            disabled={!dev.on}
             label={t('아침 알림 시각', 'Morning notification time')}
             onPick={(v) => void saveNotify(uid, { morningHour: v })}
           />
@@ -170,7 +166,6 @@ export function Settings({ uid }: { uid: string }) {
           </span>
           <HourPick
             value={notify.eveningHour}
-            disabled={!dev.on}
             label={t('저녁 알림 시각', 'Evening notification time')}
             onPick={(v) => void saveNotify(uid, { eveningHour: v })}
           />
