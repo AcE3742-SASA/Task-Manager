@@ -1,8 +1,17 @@
+import { useEffect, useState } from 'react'
 import { Screen } from '../components/Screen'
 import { SubjectIcon } from '../components/subject-icons'
 import { IconArrow } from '../components/icons'
 import { useT } from '../lib/i18n'
-import { saveSettings, useAppSettings } from '../lib/settings'
+import type { T } from '../lib/i18n'
+import { saveNotify, saveSettings, useAppSettings } from '../lib/settings'
+import {
+  isSubscribedHere,
+  permission,
+  pushSupported,
+  subscribeThisDevice,
+  unsubscribeThisDevice,
+} from '../lib/push'
 import { APP_VERSION } from '../lib/version'
 
 const GITHUB = 'https://github.com/AcE3742-SASA'
@@ -32,29 +41,137 @@ function Seg<T extends string | number>({
   )
 }
 
+const HOURS = Array.from({ length: 24 }, (_, h) => h)
+
+function HourPick({
+  value,
+  disabled,
+  t,
+  onPick,
+}: {
+  value: number | null
+  disabled: boolean
+  t: T
+  onPick: (v: number | null) => void
+}) {
+  return (
+    <select
+      className="hourpick"
+      value={value === null ? 'off' : String(value)}
+      disabled={disabled}
+      aria-label={t('알림 시각', 'Notification time')}
+      onChange={(e) => onPick(e.target.value === 'off' ? null : Number(e.target.value))}
+    >
+      <option value="off">{t('끔', 'Off')}</option>
+      {HOURS.map((h) => (
+        <option key={h} value={h}>
+          {String(h).padStart(2, '0')}:00
+        </option>
+      ))}
+    </select>
+  )
+}
+
+/**
+ * 구독 여부는 Firestore 가 아니라 이 브라우저의 PushManager 가 진실이다.
+ * 기기마다 다르므로 설정 문서에 담지 않는다.
+ */
+function useThisDevice(uid: string) {
+  const [on, setOn] = useState(false)
+  const [perm, setPerm] = useState(permission())
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    void isSubscribedHere().then(setOn)
+  }, [])
+
+  async function toggle() {
+    setBusy(true)
+    setErr(null)
+    try {
+      if (on) {
+        await unsubscribeThisDevice(uid)
+        setOn(false)
+      } else {
+        await subscribeThisDevice(uid)
+        setOn(true)
+      }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'failed')
+    } finally {
+      setPerm(permission())
+      setBusy(false)
+    }
+  }
+
+  return { on, perm, busy, err, toggle }
+}
+
 export function Settings({ uid }: { uid: string }) {
   const t = useT()
-  const { weekStartsOn, lang } = useAppSettings()
+  const { weekStartsOn, lang, notify } = useAppSettings()
+  const dev = useThisDevice(uid)
 
   return (
     <Screen title={t('설정', 'Settings')} aside={`v${APP_VERSION}`}>
       <div className="rows">
-        <div className="row off">
+        <div className="row">
           <SubjectIcon id="bell" />
           <span className="rl">
-            <b>{t('매일 알림', 'Daily reminder')}</b>
-            <em>{t('할 일 정리 · 요약 리뷰', 'Plan and review')}</em>
+            <b>{t('이 기기로 알림 받기', 'Notify this device')}</b>
+            <em>
+              {dev.err === 'unsupported'
+                ? t('홈 화면에 추가한 뒤 다시 시도', 'Add to Home Screen, then retry')
+                : dev.err === 'denied' || dev.perm === 'denied'
+                  ? t('브라우저 설정에서 허용해야 한다', 'Allow it in browser settings')
+                  : dev.err === 'nokey'
+                    ? t('VAPID 키가 설정되지 않았다', 'VAPID key is missing')
+                    : dev.err
+                      ? t('실패했다. 다시 시도해 보자', 'Failed. Try again')
+                      : dev.on
+                        ? t('켜짐', 'On')
+                        : t('꺼짐', 'Off')}
+            </em>
           </span>
-          <span className="tag">REL 2</span>
+          <span className="seg">
+            <button
+              className={dev.on ? 'on' : ''}
+              aria-pressed={dev.on}
+              disabled={dev.busy || !pushSupported()}
+              onClick={() => void dev.toggle()}
+            >
+              {dev.on ? t('끄기', 'OFF') : t('켜기', 'ON')}
+            </button>
+          </span>
         </div>
 
-        <div className="row off">
+        <div className="row">
+          <SubjectIcon id="calendar" />
+          <span className="rl">
+            <b>{t('아침 요약', 'Morning summary')}</b>
+            <em>{t('오늘·내일 마감 건수', "Today's and tomorrow's count")}</em>
+          </span>
+          <HourPick
+            value={notify.morningHour}
+            disabled={!dev.on}
+            t={t}
+            onPick={(v) => void saveNotify(uid, { morningHour: v })}
+          />
+        </div>
+
+        <div className="row">
           <SubjectIcon id="hourglass" />
           <span className="rl">
-            <b>{t('마감 임박 알림', 'Due soon')}</b>
-            <em>{t('기한 전에 알려주기', 'Nudge before the deadline')}</em>
+            <b>{t('할일 정리', 'Wrap up')}</b>
+            <em>{t('오늘 받은 과제 넣기', "Add today's assignments")}</em>
           </span>
-          <span className="tag">REL 2</span>
+          <HourPick
+            value={notify.eveningHour}
+            disabled={!dev.on}
+            t={t}
+            onPick={(v) => void saveNotify(uid, { eveningHour: v })}
+          />
         </div>
 
         <div className="row">
