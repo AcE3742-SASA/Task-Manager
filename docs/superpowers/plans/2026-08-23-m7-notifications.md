@@ -64,7 +64,7 @@
   - `pickKinds(hour: number, notify: Notify): NotifyKind[]`
   - `countDue(dues: Date[], now: Date): { today: number; tomorrow: number }`
   - `notifyCopy(kind, lang, counts): { title: string; body: string; screen: string }`
-  - `settings.ts` 의 `Settings` 에 `notify: Notify` 추가, `DEFAULT_NOTIFY`, `saveNotify(uid, patch)`
+  - `settings.ts` 의 `Settings` 에 `notify: Notify` 추가, `DEFAULT_NOTIFY`, `mergeSettings(d)`, `saveNotify(uid, patch)`
 
 - [ ] **Step 1: 실패하는 테스트를 쓴다**
 
@@ -304,51 +304,64 @@ export function saveNotify(uid: string, patch: Partial<Notify>) {
 }
 ```
 
-`useSettings` 안의 스냅샷 핸들러를 교체한다. 얕은 스프레드는 `notify` 가 없는 기존 문서를 만나면 `undefined` 를 넣어 화면이 죽는다:
+병합을 순수 함수로 빼고 `useSettings` 가 그것을 부르게 한다. 얕은 스프레드는 `notify` 가 없는 기존 문서를 만나면 `undefined` 를 넣어 화면이 죽는다. **Step 6의 테스트가 이 함수를 그대로 부르므로 사본을 만들지 않는다.**
+
+`DEFAULT_SETTINGS` 정의 아래에 추가:
 
 ```ts
-      (snap) => {
-        const d = (snap.data() ?? {}) as Partial<Settings>
-        // notify 는 한 겹 더 들어가 있어 얕은 스프레드로는 기본값이 안 채워진다.
-        // 08-21 이전에 만들어진 설정 문서에는 이 필드가 아예 없다.
-        setSettings({ ...DEFAULT_SETTINGS, ...d, notify: { ...DEFAULT_NOTIFY, ...d.notify } })
-      },
+/**
+ * notify 는 한 겹 더 들어가 있어 얕은 스프레드로는 기본값이 안 채워진다.
+ * 08-21 이전에 만들어진 설정 문서에는 이 필드가 아예 없다.
+ * 순수 함수로 둬서 테스트가 사본이 아니라 이 코드를 검증하게 한다.
+ */
+export function mergeSettings(d: Partial<Settings>): Settings {
+  return { ...DEFAULT_SETTINGS, ...d, notify: { ...DEFAULT_NOTIFY, ...d.notify } }
+}
+```
+
+`useSettings` 안의 스냅샷 핸들러를 교체:
+
+```ts
+      (snap) => setSettings(mergeSettings((snap.data() ?? {}) as Partial<Settings>)),
 ```
 
 - [ ] **Step 6: 마이그레이션 없이 기존 문서가 읽히는지 테스트로 고정한다**
 
-`src/lib/notify.test.ts` 맨 아래에 추가한다. `useSettings` 자체는 Firestore가 필요해 테스트하지 않고, 병합 규칙만 순수하게 확인한다.
+`src/lib/notify.test.ts` 맨 아래에 추가한다. `useSettings` 자체는 Firestore가 필요해 테스트하지 않고, Step 5에서 뺀 `mergeSettings` 를 **직접 부른다**. 병합 로직을 테스트 안에 복사하면 실제 코드가 깨져도 통과하는 테스트가 된다.
 
 ```ts
-import { DEFAULT_NOTIFY, DEFAULT_SETTINGS } from './settings'
-import type { Settings } from './settings'
+import { mergeSettings } from './settings'
 
-describe('설정 병합 — 마이그레이션 없이 옛 문서를 읽는다', () => {
-  const merge = (d: Partial<Settings>): Settings => ({
-    ...DEFAULT_SETTINGS,
-    ...d,
-    notify: { ...DEFAULT_NOTIFY, ...d.notify },
-  })
-
+describe('mergeSettings — 마이그레이션 없이 옛 문서를 읽는다', () => {
   it('notify 가 없는 옛 문서는 기본값을 받는다', () => {
-    expect(merge({ weekStartsOn: 0, lang: 'en' }).notify).toEqual({
+    expect(mergeSettings({ weekStartsOn: 0, lang: 'en' }).notify).toEqual({
       morningHour: 7,
       eveningHour: 21,
     })
   })
 
+  it('빈 문서도 전부 기본값이 된다', () => {
+    expect(mergeSettings({})).toEqual({
+      weekStartsOn: 1,
+      lang: 'ko',
+      notify: { morningHour: 7, eveningHour: 21 },
+    })
+  })
+
   it('한쪽만 저장된 문서는 나머지만 기본값으로 채운다', () => {
-    expect(merge({ notify: { morningHour: 6 } as never }).notify).toEqual({
+    expect(mergeSettings({ notify: { morningHour: 6 } as never }).notify).toEqual({
       morningHour: 6,
       eveningHour: 21,
     })
   })
 
   it('null 은 기본값으로 덮이지 않는다 — 꺼둔 상태가 유지돼야 한다', () => {
-    expect(merge({ notify: { morningHour: null } as never }).notify.morningHour).toBeNull()
+    expect(mergeSettings({ notify: { morningHour: null } as never }).notify.morningHour).toBeNull()
   })
 })
 ```
+
+> `as never` 는 Firestore 가 돌려주는 부분 문서를 흉내 내는 것이다. 런타임에는 `notify` 의 한쪽 키만 있는 객체가 실제로 들어오는데 `Partial<Settings>` 의 `notify` 는 `Notify` 전체를 요구한다. 여기서만 쓰고 프로덕션 코드에는 쓰지 않는다.
 
 - [ ] **Step 7: 전체 검증**
 
