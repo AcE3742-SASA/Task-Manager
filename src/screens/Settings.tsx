@@ -3,7 +3,6 @@ import { Screen } from '../components/Screen'
 import { SubjectIcon } from '../components/subject-icons'
 import { IconArrow } from '../components/icons'
 import { useT } from '../lib/i18n'
-import type { T } from '../lib/i18n'
 import { saveNotify, saveSettings, useAppSettings } from '../lib/settings'
 import {
   isSubscribedHere,
@@ -46,20 +45,21 @@ const HOURS = Array.from({ length: 24 }, (_, h) => h)
 function HourPick({
   value,
   disabled,
-  t,
+  label,
   onPick,
 }: {
   value: number | null
   disabled: boolean
-  t: T
+  label: string
   onPick: (v: number | null) => void
 }) {
+  const t = useT()
   return (
     <select
       className="hourpick"
       value={value === null ? 'off' : String(value)}
       disabled={disabled}
-      aria-label={t('알림 시각', 'Notification time')}
+      aria-label={label}
       onChange={(e) => onPick(e.target.value === 'off' ? null : Number(e.target.value))}
     >
       <option value="off">{t('끔', 'Off')}</option>
@@ -83,7 +83,9 @@ function useThisDevice(uid: string) {
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
-    void isSubscribedHere().then(setOn)
+    // serviceWorker.ready / getSubscription 은 reject 할 수 있다 — 구독 여부를
+    // 못 읽었으면 켜져 있다고 우길 근거가 없으니 꺼짐으로 본다.
+    void isSubscribedHere().then(setOn).catch(() => setOn(false))
   }, [])
 
   async function toggle() {
@@ -121,7 +123,7 @@ export function Settings({ uid }: { uid: string }) {
           <span className="rl">
             <b>{t('이 기기로 알림 받기', 'Notify this device')}</b>
             <em>
-              {dev.err === 'unsupported'
+              {dev.err === 'unsupported' || dev.perm === 'unsupported'
                 ? t('홈 화면에 추가한 뒤 다시 시도', 'Add to Home Screen, then retry')
                 : dev.err === 'denied' || dev.perm === 'denied'
                   ? t('브라우저 설정에서 허용해야 한다', 'Allow it in browser settings')
@@ -147,7 +149,7 @@ export function Settings({ uid }: { uid: string }) {
         </div>
 
         <div className="row">
-          <SubjectIcon id="calendar" />
+          <SubjectIcon id="coffee" />
           <span className="rl">
             <b>{t('아침 요약', 'Morning summary')}</b>
             <em>{t('오늘·내일 마감 건수', "Today's and tomorrow's count")}</em>
@@ -155,7 +157,7 @@ export function Settings({ uid }: { uid: string }) {
           <HourPick
             value={notify.morningHour}
             disabled={!dev.on}
-            t={t}
+            label={t('아침 알림 시각', 'Morning notification time')}
             onPick={(v) => void saveNotify(uid, { morningHour: v })}
           />
         </div>
@@ -169,7 +171,7 @@ export function Settings({ uid }: { uid: string }) {
           <HourPick
             value={notify.eveningHour}
             disabled={!dev.on}
-            t={t}
+            label={t('저녁 알림 시각', 'Evening notification time')}
             onPick={(v) => void saveNotify(uid, { eveningHour: v })}
           />
         </div>
