@@ -2,9 +2,13 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import webpush from 'web-push'
-import { DEFAULT_NOTIFY, countDue, kstHour, notifyCopy, pickKinds } from '../src/lib/notify'
-import type { Notify } from '../src/lib/notify'
-import type { Lang } from '../src/lib/i18n'
+// 상대경로에 확장자를 명시한다. @vercel/node 는 번들러가 아니라 nodeFileTrace 를
+// 써서 .ts 를 파일별로 .js 로 옮기고 import 경로는 손대지 않는데, package.json 의
+// "type": "module" 탓에 출력이 ESM 이라 Node 리졸버가 확장자를 붙여주지 않는다.
+// 확장자를 빼면 콜드스타트에 ERR_MODULE_NOT_FOUND 로 죽는다 (2026-08-24 실제로 겪음).
+import { DEFAULT_NOTIFY, countDue, kstHour, notifyCopy, pickKinds } from '../src/lib/notify.js'
+import type { Notify } from '../src/lib/notify.js'
+import type { Lang } from '../src/lib/i18n.js'
 
 /**
  * GitHub Actions 가 매시 정각에 호출한다. 공개 URL 이므로 CRON_SECRET 검사가

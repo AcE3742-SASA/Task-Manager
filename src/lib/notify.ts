@@ -1,4 +1,9 @@
-import { dayNumber } from './due'
+// 확장자를 명시한다. Vercel 의 @vercel/node 는 번들러가 아니라 nodeFileTrace 를
+// 쓴다 — .ts 를 파일별로 .js 로 옮기고 import 경로는 그대로 둔다. package.json 의
+// "type": "module" 때문에 출력이 ESM 이 되는데 Node 의 ESM 리졸버는 확장자를
+// 붙여주지 않아서, './due' 는 런타임에 못 찾는 경로가 된다.
+// 이 모듈은 api/notify.ts 가 읽으므로 확장자를 지우면 함수가 콜드스타트에 죽는다.
+import { dayNumber } from './due.js'
 import type { Lang } from './i18n'
 
 /**
