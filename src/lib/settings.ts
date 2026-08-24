@@ -93,7 +93,7 @@ function applyTheme(theme: Theme): void | (() => void) {
     // 저절로 맞는다. theme-color 는 안드로이드·데스크탑 PWA 용이라 손으로 맞춘다.
     // 값은 tokens.css 의 --paper 와 동일하게 유지한다.
     const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#2c1710' : '#fffdf8')
+    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#292a2d' : '#fffdf8')
   }
   paint()
   // 'system' 일 때만 OS 변경을 따라간다. 못박은 테마는 리스너가 필요 없다.
