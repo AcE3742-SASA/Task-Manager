@@ -13,6 +13,7 @@ const DUE_SUB_EN: Record<string, string> = {
   '오늘': 'Today',
   '내일': 'Tomorrow',
   '지남': 'Overdue',
+  '미정': 'No date',
 }
 
 /** 0=일요일, 1=월요일. M5 에서 설정값이 붙기 전까지의 기본값. */
@@ -55,17 +56,21 @@ export function nextDue(slots: Slot[], now: Date, weekStartsOn = DEFAULT_WEEK_ST
   return fromKst(p.y, p.m, nextWeekStart + offset - 1, 23, 59)
 }
 
-export type Group = '오늘' | '내일' | '이번 주' | '나중' | '완료'
-export const GROUPS: Group[] = ['오늘', '내일', '이번 주', '나중', '완료']
+export type Group = '오늘' | '내일' | '이번 주' | '미정' | '나중' | '완료'
+export const GROUPS: Group[] = ['오늘', '내일', '이번 주', '미정', '나중', '완료']
 
-/** 기한이 지난 것은 별도 그룹을 만들지 않고 "오늘" 맨 위로 올린다 (2026-08-20 결정). */
+/**
+ * 기한이 지난 것은 별도 그룹을 만들지 않고 "오늘" 맨 위로 올린다 (2026-08-20 결정).
+ * 기한을 아예 안 잡은 할일(due = null)은 "미정"으로 묶어 "이번 주"와 "나중" 사이에 둔다.
+ */
 export function groupOf(
-  due: Date,
+  due: Date | null,
   now: Date,
   done: boolean,
   weekStartsOn = DEFAULT_WEEK_START,
 ): Group {
   if (done) return '완료'
+  if (!due) return '미정'
   const diff = kstDayNumber(due) - kstDayNumber(now)
   if (diff <= 0) return '오늘'
   if (diff === 1) return '내일'
@@ -78,11 +83,14 @@ export function groupOf(
  * lang 은 표시에만 쓴다 — 기본값이 'ko' 라 이 함수의 기존 호출부와 테스트는 그대로다.
  */
 export function formatDue(
-  due: Date,
+  due: Date | null,
   now: Date,
   done: boolean,
   lang: Lang = 'ko',
 ): { main: string; sub: string } {
+  const sub0 = (ko: string) => (lang === 'en' ? DUE_SUB_EN[ko] : ko)
+  // 기한이 없으면 시각·날짜가 없으니 대시로 두고 상태만 붙인다.
+  if (!due) return { main: '—', sub: sub0(done ? '완료' : '미정') }
   const p = kstParts(due)
   const wd = lang === 'en' ? WEEKDAY_EN[p.day] : WEEKDAY[p.day]
   const sub = (ko: string) => (lang === 'en' ? DUE_SUB_EN[ko] : ko)

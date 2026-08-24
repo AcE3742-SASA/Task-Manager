@@ -30,6 +30,8 @@ export function Calendar({ uid }: { uid: string }) {
   const byId = new Map(subjects.map((s) => [s.id, s]))
   const perDay = new Map<number, Task[]>()
   for (const task of tasks) {
+    // 기한 없는 할일은 달력에 얹을 날짜가 없다 — 목록의 "미정"에서만 보인다.
+    if (!task.due) continue
     const k = dayNumber(task.due)
     perDay.set(k, [...(perDay.get(k) ?? []), task])
   }

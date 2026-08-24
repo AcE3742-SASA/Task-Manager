@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Screen } from '../components/Screen'
 import { SubjectIcon } from '../components/subject-icons'
 import { IconArrow } from '../components/icons'
@@ -31,7 +31,11 @@ function Seg<T extends string | number>({
           key={String(o.v)}
           className={o.v === value ? 'on' : ''}
           aria-pressed={o.v === value}
-          onClick={() => onPick(o.v)}
+          // 특정 칸을 직접 누르면 그 값으로. 바깥 행의 토글까지 겹쳐 실행되지 않게 막는다.
+          onClick={(e) => {
+            e.stopPropagation()
+            onPick(o.v)
+          }}
         >
           {o.label}
         </button>
@@ -40,32 +44,116 @@ function Seg<T extends string | number>({
   )
 }
 
+/**
+ * 아이콘·설명·2갈래 세그를 담은 설정 행 전체를 눌림 대상으로 만든다.
+ * 행 어디를 눌러도 지금 값이 아닌 쪽으로 넘어가고, 세그 칸을 콕 집으면 그 값이 그대로 선택된다.
+ */
+function ToggleRow<T extends string | number>({
+  icon,
+  title,
+  desc,
+  value,
+  options,
+  onPick,
+}: {
+  icon: string
+  title: string
+  desc: string
+  value: T
+  options: { v: T; label: string }[]
+  onPick: (v: T) => void
+}) {
+  const flip = () => {
+    const other = options.find((o) => o.v !== value)
+    if (other) onPick(other.v)
+  }
+  return (
+    <div
+      className="row"
+      role="button"
+      tabIndex={0}
+      onClick={flip}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          flip()
+        }
+      }}
+    >
+      <SubjectIcon id={icon} />
+      <span className="rl">
+        <b>{title}</b>
+        <em>{desc}</em>
+      </span>
+      <Seg value={value} options={options} onPick={onPick} />
+    </div>
+  )
+}
+
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
 
-function HourPick({
+/** 시각 드롭다운을 담은 설정 행. 행 어디를 눌러도 드롭다운이 열린다. */
+function HourRow({
+  icon,
+  title,
+  desc,
   value,
   label,
   onPick,
 }: {
+  icon: string
+  title: string
+  desc: string
   value: number | null
   label: string
   onPick: (v: number | null) => void
 }) {
   const t = useT()
+  const ref = useRef<HTMLSelectElement>(null)
+  // 바를 누르면 네이티브 드롭다운을 연다. showPicker 를 못 쓰면 최소한 포커스라도 준다.
+  const open = () => {
+    const el = ref.current
+    if (!el) return
+    try {
+      el.showPicker()
+    } catch {
+      el.focus()
+    }
+  }
   return (
-    <select
-      className="hourpick"
-      value={value === null ? 'off' : String(value)}
-      aria-label={label}
-      onChange={(e) => onPick(e.target.value === 'off' ? null : Number(e.target.value))}
+    <div
+      className="row"
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          open()
+        }
+      }}
     >
-      <option value="off">{t('끔', 'Off')}</option>
-      {HOURS.map((h) => (
-        <option key={h} value={h}>
-          {String(h).padStart(2, '0')}:00
-        </option>
-      ))}
-    </select>
+      <SubjectIcon id={icon} />
+      <span className="rl">
+        <b>{title}</b>
+        <em>{desc}</em>
+      </span>
+      <select
+        ref={ref}
+        className="hourpick"
+        value={value === null ? 'off' : String(value)}
+        aria-label={label}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => onPick(e.target.value === 'off' ? null : Number(e.target.value))}
+      >
+        <option value="off">{t('끔', 'Off')}</option>
+        {HOURS.map((h) => (
+          <option key={h} value={h}>
+            {String(h).padStart(2, '0')}:00
+          </option>
+        ))}
+      </select>
+    </div>
   )
 }
 
@@ -115,7 +203,21 @@ export function Settings({ uid }: { uid: string }) {
   return (
     <Screen title={t('설정', 'Settings')} aside={`v${APP_VERSION}`}>
       <div className="rows">
-        <div className="row">
+        <div
+          className="row"
+          role="button"
+          tabIndex={0}
+          aria-disabled={dev.busy || !pushSupported()}
+          onClick={() => {
+            if (!dev.busy && pushSupported()) void dev.toggle()
+          }}
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !dev.busy && pushSupported()) {
+              e.preventDefault()
+              void dev.toggle()
+            }
+          }}
+        >
           <SubjectIcon id="bell" />
           <span className="rl">
             <b>{t('이 기기로 알림 받기', 'Notify this device')}</b>
@@ -138,70 +240,57 @@ export function Settings({ uid }: { uid: string }) {
               className={dev.on ? 'on' : ''}
               aria-pressed={dev.on}
               disabled={dev.busy || !pushSupported()}
-              onClick={() => void dev.toggle()}
+              onClick={(e) => {
+                e.stopPropagation()
+                void dev.toggle()
+              }}
             >
               {dev.on ? t('끄기', 'OFF') : t('켜기', 'ON')}
             </button>
           </span>
         </div>
 
-        <div className="row">
-          <SubjectIcon id="coffee" />
-          <span className="rl">
-            <b>{t('아침 요약', 'Morning summary')}</b>
-            <em>{t('오늘·내일 마감 건수', "Today's and tomorrow's count")}</em>
-          </span>
-          <HourPick
-            value={notify.morningHour}
-            label={t('아침 알림 시각', 'Morning notification time')}
-            onPick={(v) => void saveNotify(uid, { morningHour: v })}
-          />
-        </div>
+        <HourRow
+          icon="coffee"
+          title={t('아침 요약', 'Morning summary')}
+          desc={t('오늘·내일 마감 건수', "Today's and tomorrow's count")}
+          value={notify.morningHour}
+          label={t('아침 알림 시각', 'Morning notification time')}
+          onPick={(v) => void saveNotify(uid, { morningHour: v })}
+        />
 
-        <div className="row">
-          <SubjectIcon id="hourglass" />
-          <span className="rl">
-            <b>{t('할일 정리', 'Wrap up')}</b>
-            <em>{t('오늘 받은 과제 넣기', "Add today's assignments")}</em>
-          </span>
-          <HourPick
-            value={notify.eveningHour}
-            label={t('저녁 알림 시각', 'Evening notification time')}
-            onPick={(v) => void saveNotify(uid, { eveningHour: v })}
-          />
-        </div>
+        <HourRow
+          icon="hourglass"
+          title={t('할일 정리', 'Wrap up')}
+          desc={t('오늘 받은 과제 넣기', "Add today's assignments")}
+          value={notify.eveningHour}
+          label={t('저녁 알림 시각', 'Evening notification time')}
+          onPick={(v) => void saveNotify(uid, { eveningHour: v })}
+        />
 
-        <div className="row">
-          <SubjectIcon id="calendar" />
-          <span className="rl">
-            <b>{t('주 시작 요일', 'Week starts on')}</b>
-            <em>{t('“이번 주”와 기한 계산의 기준', 'Sets “this week” and due dates')}</em>
-          </span>
-          <Seg
-            value={weekStartsOn}
-            options={[
-              { v: 1 as const, label: t('월', 'Mon') },
-              { v: 0 as const, label: t('일', 'Sun') },
-            ]}
-            onPick={(v) => saveSettings(uid, { weekStartsOn: v })}
-          />
-        </div>
+        <ToggleRow
+          icon="calendar"
+          title={t('주 시작 요일', 'Week starts on')}
+          desc={t('“이번 주”와 기한 계산의 기준', 'Sets “this week” and due dates')}
+          value={weekStartsOn}
+          options={[
+            { v: 1 as const, label: t('월', 'Mon') },
+            { v: 0 as const, label: t('일', 'Sun') },
+          ]}
+          onPick={(v) => saveSettings(uid, { weekStartsOn: v })}
+        />
 
-        <div className="row">
-          <SubjectIcon id="globe" />
-          <span className="rl">
-            <b>{t('언어', 'Language')}</b>
-            <em>Language</em>
-          </span>
-          <Seg
-            value={lang}
-            options={[
-              { v: 'ko' as const, label: '한국어' },
-              { v: 'en' as const, label: 'EN' },
-            ]}
-            onPick={(v) => saveSettings(uid, { lang: v })}
-          />
-        </div>
+        <ToggleRow
+          icon="globe"
+          title={t('언어', 'Language')}
+          desc="Language"
+          value={lang}
+          options={[
+            { v: 'ko' as const, label: '한국어' },
+            { v: 'en' as const, label: 'EN' },
+          ]}
+          onPick={(v) => saveSettings(uid, { lang: v })}
+        />
 
         <div className="row">
           <SubjectIcon id="report" />
