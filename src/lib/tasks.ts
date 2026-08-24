@@ -10,6 +10,8 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { db } from './firebase'
+import { nextRepeat } from './due'
+import type { Repeat } from './due'
 import { normalizeName } from './subjects'
 
 export const KINDS = ['과제', '수행평가', '시험', '개인'] as const
@@ -32,6 +34,8 @@ export type TaskInput = {
   /** 기한을 잡지 않은 할일은 null — 목록에서 "미정"으로 묶인다. */
   due: Date | null
   kind: Kind
+  /** 반복 주기. 'none' 이면 한 번 하고 끝난다. 완료 시 다음 회차를 새로 띄운다. */
+  repeat: Repeat
 }
 
 /**
@@ -59,6 +63,8 @@ function clean(input: TaskInput) {
     note: input.note.trim(),
     due: input.due ? Timestamp.fromDate(input.due) : null,
     kind: input.kind,
+    // 기한 없는 반복은 다음 회차를 계산할 수 없으니 저장 단계에서 'none' 으로 떨군다.
+    repeat: input.due ? input.repeat : 'none',
   }
 }
 
@@ -86,7 +92,35 @@ export function removeTask(uid: string, id: string) {
   return deleteDoc(doc(col(uid), id))
 }
 
-export function toggleDone(uid: string, task: Task) {
+/** 기한만 하루 뒤로 민다. 완료·등록 지표·다른 필드는 건드리지 않는다. */
+export function snoozeTask(uid: string, task: Task, next: Date) {
+  return updateDoc(doc(col(uid), task.id), { due: Timestamp.fromDate(next) })
+}
+
+export async function toggleDone(uid: string, task: Task) {
+  const completing = !task.done
+  // 반복 할일을 완료하면 다음 회차를 새 문서로 띄우고, 이번 건은 반복을 떼어
+  // 평범한 완료 기록으로 남긴다 — 반복을 떼야 다시 눌러도 회차가 겹치지 않는다.
+  if (completing && task.repeat !== 'none' && task.due) {
+    await createTask(
+      uid,
+      {
+        title: task.title,
+        subjectId: task.subjectId,
+        note: task.note,
+        due: nextRepeat(task.due, task.repeat),
+        kind: task.kind,
+        repeat: task.repeat,
+      },
+      // 소급 등록이라 검증 지표에는 넣지 않는다 (직접 등록이 아니다).
+      { dueWasDefault: false, entryMs: 0 },
+    )
+    return updateDoc(doc(col(uid), task.id), {
+      done: true,
+      doneAt: Timestamp.now(),
+      repeat: 'none',
+    })
+  }
   return updateDoc(doc(col(uid), task.id), {
     done: !task.done,
     // 기한 경과 후 완료를 판정하려면 완료 시각이 있어야 한다 (PRD 지표 "놓친 마감").
@@ -117,6 +151,7 @@ export function useTasks(uid: string): State {
               note: v.note ?? '',
               due: toDate(v.due),
               kind: (v.kind ?? '과제') as Kind,
+              repeat: (v.repeat ?? 'none') as Repeat,
               done: !!v.done,
               doneAt: toDate(v.doneAt),
               createdAt: toDate(v.createdAt),

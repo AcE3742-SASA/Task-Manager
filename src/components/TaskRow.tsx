@@ -14,6 +14,7 @@ type Props = {
   urgent: boolean
   onOpen: () => void
   onToggle: () => void
+  onSnooze: () => void
 }
 
 const Check = () => (
@@ -22,7 +23,23 @@ const Check = () => (
   </svg>
 )
 
-export function TaskRow({ task, subject, now, urgent, onOpen, onToggle }: Props) {
+/** 하루 앞으로 감는 시계 — "미루기". */
+const Snooze = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M21 12a9 9 0 1 1-3-6.7" />
+    <path d="M21 4v4h-4" />
+  </svg>
+)
+
+/** 반복 할일 표시 — 두 개의 순환 화살표. */
+const RepeatMark = () => (
+  <svg viewBox="0 0 24 24" className="repeat-mark">
+    <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8M20 3.5v4.5h-4.5" />
+    <path d="M20 12a8 8 0 0 1-13.7 5.6L4 16M4 20.5V16h4.5" />
+  </svg>
+)
+
+export function TaskRow({ task, subject, now, urgent, onOpen, onToggle, onSnooze }: Props) {
   const { lang } = useAppSettings()
   const t = useT()
   const due = formatDue(task.due, now, task.done, lang)
@@ -38,6 +55,7 @@ export function TaskRow({ task, subject, now, urgent, onOpen, onToggle }: Props)
           <b>{task.title}</b>
           <em>
             <s>{lang === 'en' ? (KIND_EN[task.kind] ?? task.kind) : task.kind}</s>
+            {task.repeat !== 'none' && <RepeatMark />}
             {subject?.name ?? t('과목 없음', 'No subject')}
           </em>
         </span>
@@ -46,6 +64,11 @@ export function TaskRow({ task, subject, now, urgent, onOpen, onToggle }: Props)
           <u>{due.sub}</u>
         </span>
       </button>
+      {!task.done && (
+        <button className="snooze" onClick={onSnooze} aria-label={t('하루 미루기', 'Postpone a day')}>
+          <Snooze />
+        </button>
+      )}
       <button
         className="box"
         onClick={onToggle}

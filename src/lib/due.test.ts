@@ -11,6 +11,8 @@ import {
   kstYmd,
   monthGrid,
   nextDue,
+  nextRepeat,
+  snoozeDue,
   toLocalInput,
   weekStrip,
 } from './due'
@@ -77,6 +79,65 @@ describe('nextDue — 경계', () => {
     // 8/23(일) 등록. 주 시작이 일요일이면 이번 주는 8/23~8/29, 다음 주는 8/30 시작.
     // 월요일 수업은 8/31, 기한은 8/30(일) 23:59.
     expect(iso(nextDue([slot(1)], at('2026-08-23T01:00:00Z'), 0))).toBe('2026-08-30T14:59:00.000Z')
+  })
+})
+
+describe('snoozeDue — 하루 미루기', () => {
+  const now = at('2026-08-20T01:00:00Z') // 8/20(목) 10:00 KST
+
+  it('앞으로 남은 기한은 딱 하루만 밀린다', () => {
+    // 8/24(월) 23:59 → 8/25(화) 23:59
+    expect(iso(snoozeDue(at('2026-08-24T14:59:00Z'), now))).toBe('2026-08-25T14:59:00.000Z')
+  })
+
+  it('오늘 마감은 내일 23:59 로 뛴다', () => {
+    // 8/20 아무 시각 → 8/21(금) 23:59
+    expect(iso(snoozeDue(at('2026-08-20T05:00:00Z'), now))).toBe('2026-08-21T14:59:00.000Z')
+  })
+
+  it('지난 기한도 오늘 기준 내일로 뛴다 — 계속 지남에 머물지 않는다', () => {
+    // 8/15 마감(지남) → now 기준 내일 8/21 23:59
+    expect(iso(snoozeDue(at('2026-07-01T14:59:00Z'), now))).toBe('2026-08-21T14:59:00.000Z')
+  })
+
+  it('기한이 없던 할일은 내일 23:59 마감이 된다', () => {
+    expect(iso(snoozeDue(null, now))).toBe('2026-08-21T14:59:00.000Z')
+  })
+
+  it('시각이 어떻든 결과는 23:59 로 정규화된다', () => {
+    expect(iso(snoozeDue(at('2026-08-24T02:00:00Z'), now))).toBe('2026-08-25T14:59:00.000Z')
+  })
+
+  it('월·연 경계를 넘겨도 정규화된다', () => {
+    // 12/31(목) 23:59 → 2027-01-01 23:59 KST
+    expect(iso(snoozeDue(at('2026-12-31T14:59:00Z'), now))).toBe('2027-01-01T14:59:00.000Z')
+  })
+})
+
+describe('nextRepeat — 다음 회차', () => {
+  // 8/30(일) 23:59 KST = 8/30T14:59Z
+  const due = at('2026-08-30T14:59:00Z')
+
+  it('매일은 하루 뒤, 시각은 그대로', () => {
+    expect(iso(nextRepeat(due, 'daily'))).toBe('2026-08-31T14:59:00.000Z')
+  })
+
+  it('매주는 7일 뒤', () => {
+    expect(iso(nextRepeat(due, 'weekly'))).toBe('2026-09-06T14:59:00.000Z')
+  })
+
+  it('매월은 한 달 뒤 같은 날', () => {
+    expect(iso(nextRepeat(due, 'monthly'))).toBe('2026-09-30T14:59:00.000Z')
+  })
+
+  it('연말 경계도 정규화된다', () => {
+    // 12/31 23:59 → 매월이면 다음 해 1월로 넘어간다 (1/31)
+    expect(iso(nextRepeat(at('2026-12-31T14:59:00Z'), 'monthly'))).toBe('2027-01-31T14:59:00.000Z')
+    expect(iso(nextRepeat(at('2026-12-31T14:59:00Z'), 'daily'))).toBe('2027-01-01T14:59:00.000Z')
+  })
+
+  it("'none' 은 그대로 둔다", () => {
+    expect(iso(nextRepeat(due, 'none'))).toBe(iso(due))
   })
 })
 

@@ -3,11 +3,11 @@ import { Screen } from '../components/Screen'
 import { EmptyState } from '../components/EmptyState'
 import { TaskRow } from '../components/TaskRow'
 import { IconList } from '../components/icons'
-import { GROUPS, groupOf } from '../lib/due'
+import { GROUPS, groupOf, snoozeDue } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useAppSettings } from '../lib/settings'
 import { useSubjects } from '../lib/subjects'
-import { toggleDone, useTasks } from '../lib/tasks'
+import { snoozeTask, toggleDone, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
 
 const DATE = new Intl.DateTimeFormat('ko-KR', {
@@ -79,6 +79,7 @@ export function List({ uid }: { uid: string }) {
               urgent={group === '오늘'}
               onOpen={() => navigate(`/task/${task.id}`)}
               onToggle={() => toggleDone(uid, task)}
+              onSnooze={() => snoozeTask(uid, task, snoozeDue(task.due, now))}
             />
           ))}
         </section>
