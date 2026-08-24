@@ -4,6 +4,7 @@ import {
   dayNumber,
   formatDue,
   fromLocalInput,
+  GROUPS,
   groupOf,
   kstDate,
   kstLabel,
@@ -101,6 +102,17 @@ describe('groupOf', () => {
     expect(groupOf(at('2026-08-20T14:59:00Z'), now, true)).toBe('완료')
     expect(groupOf(at('2026-07-01T14:59:00Z'), now, true)).toBe('완료')
   })
+
+  it('기한이 없으면 미정, 완료면 기한 없어도 완료', () => {
+    expect(groupOf(null, now, false)).toBe('미정')
+    expect(groupOf(null, now, true)).toBe('완료')
+  })
+})
+
+describe('그룹 순서', () => {
+  it('미정은 이번 주와 나중 사이에 온다', () => {
+    expect(GROUPS).toEqual(['오늘', '내일', '이번 주', '미정', '나중', '완료'])
+  })
 })
 
 describe('formatDue', () => {
@@ -117,6 +129,12 @@ describe('formatDue', () => {
 
   it('완료는 날짜 + 완료', () => {
     expect(formatDue(at('2026-08-19T14:59:00Z'), now, true)).toEqual({ main: '8/19 수', sub: '완료' })
+  })
+
+  it('기한이 없으면 대시 + 미정 (완료면 대시 + 완료)', () => {
+    expect(formatDue(null, now, false)).toEqual({ main: '—', sub: '미정' })
+    expect(formatDue(null, now, true)).toEqual({ main: '—', sub: '완료' })
+    expect(formatDue(null, now, false, 'en')).toEqual({ main: '—', sub: 'No date' })
   })
 })
 

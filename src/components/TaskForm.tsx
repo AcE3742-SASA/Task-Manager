@@ -29,6 +29,8 @@ export function TaskForm({ uid, subjects, task }: Props) {
   const [kind, setKind] = useState<Kind>(task?.kind ?? '과제')
   const [note, setNote] = useState(task?.note ?? '')
   const [due, setDue] = useState<Date>(task?.due ?? todayEnd(new Date()))
+  /** 기한을 아예 잡지 않는 할일인가. 수정 화면에서는 저장된 값(null이면 켜짐)을 따른다. */
+  const [noDue, setNoDue] = useState(editing ? task?.due == null : false)
   /** 사용자가 기한을 직접 건드렸는가. 수정 화면에서는 자동 계산 자체를 하지 않는다. */
   const [dueTouched, setDueTouched] = useState(editing)
   const [busy, setBusy] = useState(false)
@@ -47,11 +49,11 @@ export function TaskForm({ uid, subjects, task }: Props) {
     setBusy(true)
     setErr(null)
     try {
-      const input = { title, subjectId, note, due, kind }
+      const input = { title, subjectId, note, due: noDue ? null : due, kind }
       if (task) await saveTask(uid, task.id, input)
       else
         await createTask(uid, input, {
-          dueWasDefault: !dueTouched && !!subject,
+          dueWasDefault: !noDue && !dueTouched && !!subject,
           entryMs: Date.now() - enteredAt.current,
         })
       navigate('/')
@@ -126,7 +128,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
           </div>
         </div>
 
-        {!editing && (
+        {!editing && !noDue && (
           <div className="autonote">
             <Clock />
             <span>
@@ -163,17 +165,28 @@ export function TaskForm({ uid, subjects, task }: Props) {
 
         <div className="field">
           <span className="lbl">{t('기한', 'DUE')}</span>
-          <input
-            className="inp pix"
-            type="datetime-local"
-            value={toLocalInput(due)}
-            onChange={(e) => {
-              const d = fromLocalInput(e.target.value)
-              if (!d) return
-              setDue(d)
-              setDueTouched(true)
-            }}
-          />
+          <div className="chips">
+            <button
+              className={`chip sm${noDue ? ' on' : ''}`}
+              aria-pressed={noDue}
+              onClick={() => setNoDue((v) => !v)}
+            >
+              {t('기한 없음', 'No due date')}
+            </button>
+          </div>
+          {!noDue && (
+            <input
+              className="inp pix"
+              type="datetime-local"
+              value={toLocalInput(due)}
+              onChange={(e) => {
+                const d = fromLocalInput(e.target.value)
+                if (!d) return
+                setDue(d)
+                setDueTouched(true)
+              }}
+            />
+          )}
         </div>
 
         <div className="field">

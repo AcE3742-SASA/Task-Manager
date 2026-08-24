@@ -29,7 +29,8 @@ export type TaskInput = {
   /** 과목을 안 고른 개인 할일은 null. */
   subjectId: string | null
   note: string
-  due: Date
+  /** 기한을 잡지 않은 할일은 null — 목록에서 "미정"으로 묶인다. */
+  due: Date | null
   kind: Kind
 }
 
@@ -56,7 +57,7 @@ function clean(input: TaskInput) {
     title: normalizeName(input.title).trim(),
     subjectId: input.subjectId,
     note: input.note.trim(),
-    due: Timestamp.fromDate(input.due),
+    due: input.due ? Timestamp.fromDate(input.due) : null,
     kind: input.kind,
   }
 }
@@ -114,7 +115,7 @@ export function useTasks(uid: string): State {
               title: v.title ?? '',
               subjectId: v.subjectId ?? null,
               note: v.note ?? '',
-              due: toDate(v.due) ?? new Date(),
+              due: toDate(v.due),
               kind: (v.kind ?? '과제') as Kind,
               done: !!v.done,
               doneAt: toDate(v.doneAt),
@@ -123,10 +124,10 @@ export function useTasks(uid: string): State {
               entryMs: v.entryMs ?? 0,
             }
           })
-          // 기한 순. 같은 기한이면 먼저 만든 것이 위로.
+          // 기한 순. 기한 없는 것(미정)은 맨 뒤로. 같은 기한이면 먼저 만든 것이 위로.
           .sort(
             (a, b) =>
-              a.due.getTime() - b.due.getTime() ||
+              (a.due?.getTime() ?? Infinity) - (b.due?.getTime() ?? Infinity) ||
               (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0),
           )
         setState({ tasks, loading: false, error: null })
