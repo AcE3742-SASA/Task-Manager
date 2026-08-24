@@ -98,6 +98,14 @@
   background: var(--paper);
   border-color: var(--ink);
 }
+/* 다크의 "오늘"은 밝은 잉크 면이 아니라 어두운 카드라, 라이트용 sagelt·tan 조합이
+   묻힌다. 테두리는 잉크로, 아이콘은 due 와 같은 밝은 앰버로 되돌린다. */
+:root[data-theme='dark'] .task.urgent .snooze {
+  border-color: var(--ink);
+}
+:root[data-theme='dark'] .task.urgent .snooze svg {
+  stroke: #d6a94f;
+}
 
 :root[data-theme='dark'] .row.danger {
   background: #3a2a2a; /* 어두운 웜 레드 틴트. 밝은 블록 대신 위험을 색으로 알린다 */

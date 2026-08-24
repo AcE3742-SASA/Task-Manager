@@ -133,6 +133,17 @@ export function todayEnd(now: Date): Date {
   return fromKst(p.y, p.m, p.d, 23, 59)
 }
 
+/**
+ * "미루기" — 기한을 하루 뒤 23:59 로 민다.
+ * 기준일은 오늘과 기존 기한 중 늦은 쪽이라, 지난 · 오늘 마감은 내일로 뛰고
+ * 앞으로 남은 기한은 딱 하루씩만 밀린다. 기한이 없던 할일은 내일 마감이 된다.
+ */
+export function snoozeDue(due: Date | null, now: Date): Date {
+  const base = due && kstDayNumber(due) > kstDayNumber(now) ? due : now
+  const p = kstParts(base)
+  return fromKst(p.y, p.m, p.d + 1, 23, 59)
+}
+
 /** 달력이 쓰는 KST 날짜 도구. 정오를 앵커로 잡아 자정 경계 혼동을 피한다. */
 export const dayNumber = (t: Date) => kstDayNumber(t)
 export const kstYmd = (d: Date) => {

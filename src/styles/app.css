@@ -765,6 +765,27 @@
   stroke-linecap: square;
 }
 
+/* 미루기 — 체크박스 왼쪽에 붙는 하루 앞으로 버튼. 완료된 할일에는 아예 안 뜬다. */
+.task .snooze {
+  width: 32px;
+  height: 32px;
+  border: var(--b2);
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  padding: 0;
+}
+.task .snooze svg {
+  width: 17px;
+  height: 17px;
+  stroke: var(--muted);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* 오늘(지난 기한 포함)은 면을 뒤집어 목록에서 먼저 눈에 들어오게 한다. */
 .task.urgent {
   background: var(--ink);
@@ -793,6 +814,12 @@
 .task.urgent .box {
   background: var(--cream);
   border-color: var(--cream);
+}
+.task.urgent .snooze {
+  border-color: var(--sagelt);
+}
+.task.urgent .snooze svg {
+  stroke: var(--tan);
 }
 
 .task.done {
@@ -1044,6 +1071,7 @@
    탄(tan)은 잉크 위에서 7.33:1 이라 확실히 뜬다. */
 .task.urgent .hit:focus-visible,
 .task.urgent .box:focus-visible,
+.task.urgent .snooze:focus-visible,
 .nav a.mid:focus-visible {
   outline-color: var(--tan);
 }
@@ -1055,6 +1083,7 @@
 .calhead .step,
 .seg button,
 .task .box,
+.task .snooze,
 .chip,
 .swatch {
   position: relative;
@@ -1063,6 +1092,7 @@
 .calhead .step::after,
 .seg button::after,
 .task .box::after,
+.task .snooze::after,
 .chip::after,
 .swatch::after {
   content: '';
@@ -1087,6 +1117,11 @@
 .task .box::after {
   left: -6px;
   right: -6px;
+}
+/* 미루기와 체크박스 사이 간격은 11px. 서로의 타깃이 겹치지 않게 안쪽은 5px 만 넓힌다. */
+.task .snooze::after {
+  left: -6px;
+  right: -5px;
 }
 
 /* ─── 눌림 ───
@@ -1130,6 +1165,7 @@
 .week .d:not(.on):active,
 .pickgrid button:not(.on):active,
 .task .box:active,
+.task .snooze:active,
 .nav a:not(.mid):active {
   background: var(--sagelt);
 }

@@ -14,6 +14,7 @@ type Props = {
   urgent: boolean
   onOpen: () => void
   onToggle: () => void
+  onSnooze: () => void
 }
 
 const Check = () => (
@@ -22,7 +23,15 @@ const Check = () => (
   </svg>
 )
 
-export function TaskRow({ task, subject, now, urgent, onOpen, onToggle }: Props) {
+/** 하루 앞으로 감는 시계 — "미루기". */
+const Snooze = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M21 12a9 9 0 1 1-3-6.7" />
+    <path d="M21 4v4h-4" />
+  </svg>
+)
+
+export function TaskRow({ task, subject, now, urgent, onOpen, onToggle, onSnooze }: Props) {
   const { lang } = useAppSettings()
   const t = useT()
   const due = formatDue(task.due, now, task.done, lang)
@@ -46,6 +55,11 @@ export function TaskRow({ task, subject, now, urgent, onOpen, onToggle }: Props)
           <u>{due.sub}</u>
         </span>
       </button>
+      {!task.done && (
+        <button className="snooze" onClick={onSnooze} aria-label={t('하루 미루기', 'Postpone a day')}>
+          <Snooze />
+        </button>
+      )}
       <button
         className="box"
         onClick={onToggle}

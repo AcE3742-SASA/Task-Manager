@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
 import { TaskRow } from '../components/TaskRow'
-import { dateFromDayNumber, dayNumber, kstDate, kstYmd, monthGrid, weekStrip } from '../lib/due'
+import { dateFromDayNumber, dayNumber, kstDate, kstYmd, monthGrid, snoozeDue, weekStrip } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useAppSettings } from '../lib/settings'
 import { useSubjects } from '../lib/subjects'
-import { toggleDone, useTasks } from '../lib/tasks'
+import { snoozeTask, toggleDone, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
 
 const WD_KO = ['일', '월', '화', '수', '목', '금', '토']
@@ -200,6 +200,7 @@ export function Calendar({ uid }: { uid: string }) {
             urgent={false}
             onOpen={() => navigate(`/task/${task.id}`)}
             onToggle={() => toggleDone(uid, task)}
+            onSnooze={() => snoozeTask(uid, task, snoozeDue(task.due, today))}
           />
         ))
       )}

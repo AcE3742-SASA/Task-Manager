@@ -86,6 +86,11 @@ export function removeTask(uid: string, id: string) {
   return deleteDoc(doc(col(uid), id))
 }
 
+/** 기한만 하루 뒤로 민다. 완료·등록 지표·다른 필드는 건드리지 않는다. */
+export function snoozeTask(uid: string, task: Task, next: Date) {
+  return updateDoc(doc(col(uid), task.id), { due: Timestamp.fromDate(next) })
+}
+
 export function toggleDone(uid: string, task: Task) {
   return updateDoc(doc(col(uid), task.id), {
     done: !task.done,
