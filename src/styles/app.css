@@ -316,6 +316,15 @@
   width: 100%;
   text-align: left;
 }
+/* 설정 행 사이에 끼우는 작은 안내문. 카드가 아니라 여백 위 각주처럼 둔다. */
+.rows-note {
+  margin: -2px 2px 2px;
+  padding-left: 9px;
+  border-left: 2px solid rgba(var(--ink-rgb), 0.28);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
 .row .rl {
   flex: 1;
   min-width: 0;
@@ -731,6 +740,17 @@
   padding: 0 4px;
   flex: none;
 }
+/* 반복 할일 표시. 종류 태그와 과목 이름 사이에 작게 끼운다. */
+.task .txt em .repeat-mark {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  stroke: var(--muted);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .task .due {
   font-family: var(--pix);
   font-size: 10.5px;
@@ -798,6 +818,9 @@
 }
 .task.urgent .txt em s {
   border-color: var(--sagelt);
+}
+.task.urgent .txt em .repeat-mark {
+  stroke: var(--sagelt);
 }
 .task.urgent .due {
   color: var(--tan);
@@ -1131,6 +1154,7 @@
 .task,
 .chip,
 .swatch,
+.typecard,
 .calhead .step,
 .empty .mark {
   transition:
@@ -1181,6 +1205,104 @@
   color: var(--ink);
 }
 
+/* ─── New 종류 고르기 모달 (바닥 시트) ─── */
+.modal-back {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  animation: modal-fade 140ms var(--ease);
+}
+.modal {
+  width: 100%;
+  max-width: 480px;
+  background: var(--cream);
+  border-top: var(--b);
+  padding: 18px var(--gut) calc(18px + env(safe-area-inset-bottom));
+  animation: modal-rise 180ms var(--ease);
+}
+.modal-title {
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+}
+.typecard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border: var(--b2);
+  background: var(--paper);
+  box-shadow: var(--sh-xs);
+  padding: 13px;
+  margin-bottom: 10px;
+}
+.typecard .tc-ic {
+  width: 42px;
+  height: 42px;
+  border: var(--b2);
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+.typecard .tc-ic svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--ink);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.typecard .tc-txt {
+  min-width: 0;
+}
+.typecard .tc-txt b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.typecard .tc-txt em {
+  display: block;
+  font-style: normal;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.modal-cancel {
+  width: 100%;
+  border: var(--b2);
+  background: transparent;
+  padding: 12px;
+  margin-top: 4px;
+  font-family: var(--pix);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.typecard:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+.modal-cancel:active {
+  background: var(--sagelt);
+}
+@keyframes modal-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes modal-rise {
+  from {
+    transform: translateY(14px);
+  }
+}
+
 /* ─── 동작 최소화 ───
    눌림 자체는 상태 표시라 남긴다. 없애는 것은 그 사이를 잇는 시간뿐이다. */
 @media (prefers-reduced-motion: reduce) {
@@ -1192,5 +1314,9 @@
   .calhead .step,
   .empty .mark {
     transition-duration: 1ms;
+  }
+  .modal-back,
+  .modal {
+    animation-duration: 1ms;
   }
 }

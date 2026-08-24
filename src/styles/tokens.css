@@ -88,6 +88,9 @@
 :root[data-theme='dark'] .task.urgent .txt em s {
   border-color: var(--muted);
 }
+:root[data-theme='dark'] .task.urgent .txt em .repeat-mark {
+  stroke: var(--muted);
+}
 :root[data-theme='dark'] .task.urgent .ic svg {
   stroke: var(--ink);
 }

@@ -31,6 +31,14 @@ const Snooze = () => (
   </svg>
 )
 
+/** 반복 할일 표시 — 두 개의 순환 화살표. */
+const RepeatMark = () => (
+  <svg viewBox="0 0 24 24" className="repeat-mark">
+    <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8M20 3.5v4.5h-4.5" />
+    <path d="M20 12a8 8 0 0 1-13.7 5.6L4 16M4 20.5V16h4.5" />
+  </svg>
+)
+
 export function TaskRow({ task, subject, now, urgent, onOpen, onToggle, onSnooze }: Props) {
   const { lang } = useAppSettings()
   const t = useT()
@@ -47,6 +55,7 @@ export function TaskRow({ task, subject, now, urgent, onOpen, onToggle, onSnooze
           <b>{task.title}</b>
           <em>
             <s>{lang === 'en' ? (KIND_EN[task.kind] ?? task.kind) : task.kind}</s>
+            {task.repeat !== 'none' && <RepeatMark />}
             {subject?.name ?? t('과목 없음', 'No subject')}
           </em>
         </span>

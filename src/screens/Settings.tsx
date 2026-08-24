@@ -295,6 +295,15 @@ export function Settings({ uid }: { uid: string }) {
           onPick={(v) => void saveNotify(uid, { soonBefore: v })}
         />
 
+        {/* 알림은 매시 정각의 서버 크론으로 나간다. 그 크론(GitHub Actions)이
+            밀리는 일이 잦아, 도착이 20분쯤 늦을 수 있음을 미리 알린다. */}
+        <p className="rows-note">
+          {t(
+            '알림은 서버 일정에 따라 정시보다 20분 정도 늦게 도착할 수 있다.',
+            'Notifications may arrive up to about 20 minutes late, depending on server scheduling.',
+          )}
+        </p>
+
         <ToggleRow
           icon="calendar"
           title={t('주 시작 요일', 'Week starts on')}

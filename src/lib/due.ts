@@ -144,6 +144,23 @@ export function snoozeDue(due: Date | null, now: Date): Date {
   return fromKst(p.y, p.m, p.d + 1, 23, 59)
 }
 
+/** 반복 주기. 'none' 은 한 번 하고 끝나는 평범한 할일이다. */
+export type Repeat = 'none' | 'daily' | 'weekly' | 'monthly'
+export const REPEATS: Repeat[] = ['none', 'daily', 'weekly', 'monthly']
+
+/**
+ * 다음 회차의 기한. 시각(시·분)은 그대로 두고 날짜만 주기만큼 민다.
+ * 월간에서 말일(31일 등)은 Date.UTC 정규화로 다음 달로 넘칠 수 있는데,
+ * 학교 일정의 "매월 n일" 용도에는 문제가 없어 그대로 둔다. 'none' 은 그대로.
+ */
+export function nextRepeat(due: Date, repeat: Repeat): Date {
+  const p = kstParts(due)
+  if (repeat === 'daily') return fromKst(p.y, p.m, p.d + 1, p.h, p.min)
+  if (repeat === 'weekly') return fromKst(p.y, p.m, p.d + 7, p.h, p.min)
+  if (repeat === 'monthly') return fromKst(p.y, p.m + 1, p.d, p.h, p.min)
+  return due
+}
+
 /** 달력이 쓰는 KST 날짜 도구. 정오를 앵커로 잡아 자정 경계 혼동을 피한다. */
 export const dayNumber = (t: Date) => kstDayNumber(t)
 export const kstYmd = (d: Date) => {

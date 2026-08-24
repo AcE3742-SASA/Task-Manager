@@ -11,6 +11,7 @@ import {
   kstYmd,
   monthGrid,
   nextDue,
+  nextRepeat,
   snoozeDue,
   toLocalInput,
   weekStrip,
@@ -110,6 +111,33 @@ describe('snoozeDue — 하루 미루기', () => {
   it('월·연 경계를 넘겨도 정규화된다', () => {
     // 12/31(목) 23:59 → 2027-01-01 23:59 KST
     expect(iso(snoozeDue(at('2026-12-31T14:59:00Z'), now))).toBe('2027-01-01T14:59:00.000Z')
+  })
+})
+
+describe('nextRepeat — 다음 회차', () => {
+  // 8/30(일) 23:59 KST = 8/30T14:59Z
+  const due = at('2026-08-30T14:59:00Z')
+
+  it('매일은 하루 뒤, 시각은 그대로', () => {
+    expect(iso(nextRepeat(due, 'daily'))).toBe('2026-08-31T14:59:00.000Z')
+  })
+
+  it('매주는 7일 뒤', () => {
+    expect(iso(nextRepeat(due, 'weekly'))).toBe('2026-09-06T14:59:00.000Z')
+  })
+
+  it('매월은 한 달 뒤 같은 날', () => {
+    expect(iso(nextRepeat(due, 'monthly'))).toBe('2026-09-30T14:59:00.000Z')
+  })
+
+  it('연말 경계도 정규화된다', () => {
+    // 12/31 23:59 → 매월이면 다음 해 1월로 넘어간다 (1/31)
+    expect(iso(nextRepeat(at('2026-12-31T14:59:00Z'), 'monthly'))).toBe('2027-01-31T14:59:00.000Z')
+    expect(iso(nextRepeat(at('2026-12-31T14:59:00Z'), 'daily'))).toBe('2027-01-01T14:59:00.000Z')
+  })
+
+  it("'none' 은 그대로 둔다", () => {
+    expect(iso(nextRepeat(due, 'none'))).toBe(iso(due))
   })
 })
 

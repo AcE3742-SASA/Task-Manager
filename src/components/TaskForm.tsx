@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Screen } from './Screen'
 import { SubjectIcon } from './subject-icons'
-import { classDayOf, fromLocalInput, kstLabel, nextDue, toLocalInput, todayEnd } from '../lib/due'
+import { classDayOf, fromLocalInput, kstLabel, nextDue, REPEATS, toLocalInput, todayEnd } from '../lib/due'
+import type { Repeat } from '../lib/due'
 import { createTask, removeTask, saveTask, KINDS, KIND_EN } from '../lib/tasks'
 import type { Kind, Task } from '../lib/tasks'
 import type { Subject } from '../lib/subjects'
@@ -16,9 +17,16 @@ const Clock = () => (
   </svg>
 )
 
-type Props = { uid: string; subjects: Subject[]; task?: Task }
+type Props = { uid: string; subjects: Subject[]; task?: Task; initialRepeat?: Repeat }
 
-export function TaskForm({ uid, subjects, task }: Props) {
+const REPEAT_LABELS: Record<Repeat, { ko: string; en: string }> = {
+  none: { ko: '안 함', en: 'Never' },
+  daily: { ko: '매일', en: 'Daily' },
+  weekly: { ko: '매주', en: 'Weekly' },
+  monthly: { ko: '매월', en: 'Monthly' },
+}
+
+export function TaskForm({ uid, subjects, task, initialRepeat }: Props) {
   const navigate = useNavigate()
   const editing = !!task
   const { weekStartsOn, lang } = useAppSettings()
@@ -28,6 +36,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
   const [subjectId, setSubjectId] = useState<string | null>(task?.subjectId ?? null)
   const [kind, setKind] = useState<Kind>(task?.kind ?? '과제')
   const [note, setNote] = useState(task?.note ?? '')
+  const [repeat, setRepeat] = useState<Repeat>(task?.repeat ?? initialRepeat ?? 'none')
   const [due, setDue] = useState<Date>(task?.due ?? todayEnd(new Date()))
   /** 기한을 아예 잡지 않는 할일인가. 수정 화면에서는 저장된 값(null이면 켜짐)을 따른다. */
   const [noDue, setNoDue] = useState(editing ? task?.due == null : false)
@@ -49,7 +58,7 @@ export function TaskForm({ uid, subjects, task }: Props) {
     setBusy(true)
     setErr(null)
     try {
-      const input = { title, subjectId, note, due: noDue ? null : due, kind }
+      const input = { title, subjectId, note, due: noDue ? null : due, kind, repeat }
       if (task) await saveTask(uid, task.id, input)
       else
         await createTask(uid, input, {
@@ -188,6 +197,33 @@ export function TaskForm({ uid, subjects, task }: Props) {
             />
           )}
         </div>
+
+        {/* 반복은 기한이 있어야 다음 회차를 계산할 수 있다. "기한 없음"이면 숨긴다. */}
+        {!noDue && (
+          <div className="field">
+            <span className="lbl">{t('반복', 'REPEAT')}</span>
+            <div className="chips">
+              {REPEATS.map((r) => (
+                <button
+                  key={r}
+                  className={`chip sm${r === repeat ? ' on' : ''}`}
+                  aria-pressed={r === repeat}
+                  onClick={() => setRepeat(r)}
+                >
+                  {lang === 'en' ? REPEAT_LABELS[r].en : REPEAT_LABELS[r].ko}
+                </button>
+              ))}
+            </div>
+            {repeat !== 'none' && (
+              <div className="limit">
+                {t(
+                  '완료할 때마다 다음 회차가 자동으로 생긴다.',
+                  'Completing it spawns the next occurrence automatically.',
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="field">
           <span className="lbl">{t('과제 종류 — 표시 전용', 'KIND — LABEL ONLY')}</span>
