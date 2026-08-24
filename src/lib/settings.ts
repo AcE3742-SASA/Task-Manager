@@ -5,13 +5,17 @@ import type { Lang } from './i18n'
 import { DEFAULT_NOTIFY } from './notify'
 import type { Notify } from './notify'
 
+/** 'system' 은 OS 설정을 따른다. light·dark 는 그걸 무시하고 못박는다. */
+export type Theme = 'system' | 'light' | 'dark'
+
 /** 0 = 일요일, 1 = 월요일. "이번 주"의 경계와 자동 기한 계산이 함께 읽는다. */
-export type Settings = { weekStartsOn: 0 | 1; lang: Lang; notify: Notify }
+export type Settings = { weekStartsOn: 0 | 1; lang: Lang; notify: Notify; theme: Theme }
 
 export const DEFAULT_SETTINGS: Settings = {
   weekStartsOn: 1,
   lang: 'ko',
   notify: DEFAULT_NOTIFY,
+  theme: 'system',
 }
 
 /**
@@ -65,5 +69,36 @@ export function useSettings(uid: string): Settings {
     document.documentElement.lang = settings.lang
   }, [settings.lang])
 
+  // 다크 모드는 CSS 가 <html data-theme> 만 본다. 'system' 도 여기서 OS 값을
+  // 읽어 light/dark 중 하나로 못박는다 — CSS 에 미디어쿼리를 두지 않으므로
+  // (토큰 블록 중복을 피한다), OS 테마가 바뀌면 리스너로 다시 칠한다.
+  useEffect(() => applyTheme(settings.theme), [settings.theme])
+
   return settings
+}
+
+/** data-theme 을 확정하고, 테마 색과 맞는 상태바 색(theme-color)까지 맞춘다. */
+function resolveTheme(theme: Theme): 'light' | 'dark' {
+  if (theme !== 'system') return theme
+  return typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light'
+}
+
+function applyTheme(theme: Theme): void | (() => void) {
+  const paint = () => {
+    const resolved = resolveTheme(theme)
+    document.documentElement.dataset.theme = resolved
+    // iOS standalone 은 문서 배경색(= --paper)으로 상태바 띠를 칠하므로 이건
+    // 저절로 맞는다. theme-color 는 안드로이드·데스크탑 PWA 용이라 손으로 맞춘다.
+    // 값은 tokens.css 의 --paper 와 동일하게 유지한다.
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#2c1710' : '#fffdf8')
+  }
+  paint()
+  // 'system' 일 때만 OS 변경을 따라간다. 못박은 테마는 리스너가 필요 없다.
+  if (theme !== 'system' || typeof matchMedia !== 'function') return
+  const mq = matchMedia('(prefers-color-scheme: dark)')
+  mq.addEventListener('change', paint)
+  return () => mq.removeEventListener('change', paint)
 }

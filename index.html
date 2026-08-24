@@ -5,8 +5,20 @@
     <!-- 전체화면 앱처럼 쓴다: 핀치 줌·더블탭 줌을 막는다. 확대해서 볼 잔글씨가 없는 디자인이다. -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>SASA 할 일</title>
-    <!-- appbar 와 같은 paper. 크림으로 두면 상태바 띠와 appbar 사이에 이음매가 보인다. -->
+    <!-- appbar 와 같은 paper. 크림으로 두면 상태바 띠와 appbar 사이에 이음매가 보인다.
+         다크에서는 settings.ts 가 이 값을 --paper 다크값으로 바꾼다. -->
     <meta name="theme-color" content="#FFFDF8" />
+
+    <!-- 첫 페인트 FOUC 방지. 저장된 테마는 로그인 후에야 읽히므로, 그 전까지는
+         OS 설정으로 data-theme 을 정해 시스템 다크 사용자가 흰 화면을 스치지 않게 한다.
+         로그인 뒤 settings.ts 가 저장값(system/light/dark)으로 덮어쓴다. -->
+    <script>
+      try {
+        var d = matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.dataset.theme = d ? 'dark' : 'light'
+        if (d) document.querySelector('meta[name=theme-color]').content = '#2c1710'
+      } catch (e) {}
+    </script>
 
     <!-- iOS는 manifest만으로 홈 화면 설치가 제대로 되지 않는다. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />

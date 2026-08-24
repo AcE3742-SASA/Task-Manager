@@ -15,8 +15,18 @@ import type { Lang } from './i18n'
 
 export type NotifyKind = 'morning' | 'evening'
 
-/** 0~23 시(KST). null 이면 그 알림을 끈다. */
-export type Notify = { morningHour: number | null; eveningHour: number | null }
+/**
+ * morningHour·eveningHour: 0~23 시(KST). null 이면 그 알림을 끈다. 정각 트리거다.
+ * soonBefore: "곧 마감" 알림의 여유 시간(시). 마감 이 시간 전 정각에 한 번 온다.
+ *   null 이면 끈다. 정각(시각)이 아니라 과제 하나하나의 마감을 기준으로 걸리는
+ *   사건 트리거라 morning·evening 과 성격이 다르다 — pickKinds 가 아니라
+ *   countDueSoon 이 판정한다.
+ */
+export type Notify = {
+  morningHour: number | null
+  eveningHour: number | null
+  soonBefore: number | null
+}
 
 /**
  * settings.ts 가 아니라 여기 있어야 한다 — Vercel 함수(api/notify.ts)가 이 값을
@@ -25,15 +35,27 @@ export type Notify = { morningHour: number | null; eveningHour: number | null }
  * 값이라 Vercel 의 순수 Node 런타임에는 없다 — 있으면 함수가 콜드 스타트마다
  * 죽는다. "정리한답시고" settings.ts 로 다시 옮기지 말 것.
  */
-export const DEFAULT_NOTIFY: Notify = { morningHour: 7, eveningHour: 21 }
+// "곧 마감"은 기본 끔이다. 이 앱의 마감은 대부분 23:59 로 몰려 있어(설계 문서
+// 참고) 켜 두면 저녁 알림과 겹치기 쉽다. 원하는 사용자가 Settings 에서 켠다.
+export const DEFAULT_NOTIFY: Notify = { morningHour: 7, eveningHour: 21, soonBefore: null }
 
 const KST_MS = 9 * 3600_000
 
 export const kstHour = (now: Date) =>
   Math.floor(((now.getTime() + KST_MS) / 3600_000) % 24)
 
-/** 지금 시각에 이 사용자가 받아야 할 알림들. 아침이 먼저다. */
-export function pickKinds(hour: number, notify: Notify): NotifyKind[] {
+/** 에폭 이후 KST 절대 시(정각 버킷). 자정을 넘겨도 이어지는 시간 차 계산에 쓴다. */
+const kstAbsHour = (t: Date) => Math.floor((t.getTime() + KST_MS) / 3600_000)
+
+/**
+ * 지금 시각에 이 사용자가 받아야 할 정각 알림들. 아침이 먼저다.
+ * soonBefore 는 여기서 보지 않는다 — 정각이 아니라 과제 마감을 기준으로 걸리므로
+ * countDueSoon 이 따로 판정한다. 그래서 이 두 필드만 받는다.
+ */
+export function pickKinds(
+  hour: number,
+  notify: Pick<Notify, 'morningHour' | 'eveningHour'>,
+): NotifyKind[] {
   const kinds: NotifyKind[] = []
   if (notify.morningHour === hour) kinds.push('morning')
   if (notify.eveningHour === hour) kinds.push('evening')
@@ -58,6 +80,27 @@ export function countDue(dues: Date[], now: Date): DueCounts {
   return { today: t, tomorrow: m }
 }
 
+/**
+ * 지금 실행에서 "곧 마감" 알림에 걸릴 미완료 과제 수.
+ *
+ * 각 과제는 마감이 지금으로부터 정확히 leadHours 시간(정각 버킷) 뒤일 때 딱 한 번
+ * 걸린다 — cron 이 매시 정각에 도는 것에 맞춰, 별도의 "이미 알림 보냄" 상태를
+ * Firestore 에 쌓지 않고도 과제당 정확히 한 번만 발송되게 한다.
+ *
+ * 정각 버킷 기준이라 마감 23:59 짜리를 leadHours=2 로 두면 21시 실행에 걸리고,
+ * 실제 여유는 leadHours ~ leadHours+1 시간이다(늦기보다 이르게 알린다).
+ * cron 이 통째로 걸러지면 그 시간의 과제는 놓친다 — 설계상 수용한 지연이다.
+ * 완료 여부·null 마감 거르기는 호출부(서버)가 이미 처리해 dues 로 넘긴다.
+ */
+export function countDueSoon(dues: Date[], now: Date, leadHours: number): number {
+  const nowH = kstAbsHour(now)
+  let n = 0
+  for (const due of dues) {
+    if (kstAbsHour(due) - nowH === leadHours) n++
+  }
+  return n
+}
+
 export type Copy = { title: string; body: string; screen: string }
 
 export function notifyCopy(kind: NotifyKind, lang: Lang, counts: DueCounts): Copy {
@@ -77,5 +120,19 @@ export function notifyCopy(kind: NotifyKind, lang: Lang, counts: DueCounts): Cop
       ? '오늘 받은 과제, 지금 넣어두자.'
       : "Add today's assignments before you forget.",
     screen: '/new',
+  }
+}
+
+/**
+ * "곧 마감" 문구. morning·evening 과 달리 건수가 0 이면 서버가 아예 발송을
+ * 건너뛰므로(사건 알림이라 조용한 게 맞다) 여기서 0 을 다루지 않는다.
+ * 탭하면 List 로 보낸다.
+ */
+export function dueSoonCopy(lang: Lang, count: number, leadHours: number): Copy {
+  const ko = lang !== 'en'
+  return {
+    title: ko ? '곧 마감' : 'Due soon',
+    body: ko ? `${leadHours}시간 안에 마감 ${count}건` : `${count} due within ${leadHours}h`,
+    screen: '/',
   }
 }
