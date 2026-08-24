@@ -17,7 +17,7 @@ const Clock = () => (
   </svg>
 )
 
-type Props = { uid: string; subjects: Subject[]; task?: Task; initialRepeat?: Repeat }
+type Props = { uid: string; subjects: Subject[]; task?: Task }
 
 const REPEAT_LABELS: Record<Repeat, { ko: string; en: string }> = {
   none: { ko: '안 함', en: 'Never' },
@@ -26,7 +26,7 @@ const REPEAT_LABELS: Record<Repeat, { ko: string; en: string }> = {
   monthly: { ko: '매월', en: 'Monthly' },
 }
 
-export function TaskForm({ uid, subjects, task, initialRepeat }: Props) {
+export function TaskForm({ uid, subjects, task }: Props) {
   const navigate = useNavigate()
   const editing = !!task
   const { weekStartsOn, lang } = useAppSettings()
@@ -36,7 +36,7 @@ export function TaskForm({ uid, subjects, task, initialRepeat }: Props) {
   const [subjectId, setSubjectId] = useState<string | null>(task?.subjectId ?? null)
   const [kind, setKind] = useState<Kind>(task?.kind ?? '과제')
   const [note, setNote] = useState(task?.note ?? '')
-  const [repeat, setRepeat] = useState<Repeat>(task?.repeat ?? initialRepeat ?? 'none')
+  const [repeat, setRepeat] = useState<Repeat>(task?.repeat ?? 'none')
   const [due, setDue] = useState<Date>(task?.due ?? todayEnd(new Date()))
   /** 기한을 아예 잡지 않는 할일인가. 수정 화면에서는 저장된 값(null이면 켜짐)을 따른다. */
   const [noDue, setNoDue] = useState(editing ? task?.due == null : false)
