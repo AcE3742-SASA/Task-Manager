@@ -40,36 +40,74 @@
 }
 
 /* ─── 다크 모드 (M8) ──────────────────────────────────────────────
-   라이트에서 확정한 5색의 "역할"을 그대로 다크 그라운드로 옮긴다.
+   라이트를 기계적으로 뒤집지 않는다. 순수 토큰 반전은 "잉크로 채운 강조"
+   (urgent 카드·danger 행 같은 큰 면)를 밝은 블록으로 만들어 어두운 화면에서
+   눈을 찌르고, 순백에 가까운 글자는 대비가 과해 오래 보기 불편했다.
+   여기서는 편안함을 목표로 다시 짠다.
 
-   핵심은 --ink 의 뒤집기다. 라이트에서 --ink 는 테두리·하드섀도우·본문
-   텍스트를 한꺼번에 맡는 어두운 색이었다. 다크에서는 같은 역할을 밝은
-   웜 오프화이트로 옮긴다 — 잉크로 채우던 "선택/눌림" 면은 밝은 면이 되고,
-   그 위의 크림 글자(--cream)는 어두운 글자가 되어 관계가 그대로 뒤집힌다.
-   --cream 은 그라운드(가장 어두움), --paper 는 그보다 한 톤 밝은 카드 면.
+   방침:
+   1) 그라운드는 중립 다크 그레이(웜 에스프레소는 과목색·탄과 섞여 탁했다).
+      cream=그라운드(가장 어두움), paper=한 톤 위 카드.
+   2) --ink 는 순백이 아니라 부드러운 오프화이트다. 본문 대비를 ~9:1 로 낮춰
+      (14:1 순백 대신) 눈이 편하게 한다. 테두리·하드섀도우도 이 톤이라
+      네오브루탈리즘 특유의 굵은 선이 은은해진다. 합성 토큰(--b·--sh 등)은
+      var(--ink) 를 사용 시점에 읽어 저절로 따라오므로 여기선 색만 정한다.
+   3) 액센트(세이지·탄)에 warm 정체성을 남긴다.
+   4) 큰 "채워진 강조" 면(urgent·danger)만 아래 오버라이드에서 밝은 블록 대신
+      살짝 띄운 어두운 면으로 되돌린다. 작은 강조(세그 토글·+버튼·달력 선택·
+      체크박스)는 밝은 블록이 오히려 기분 좋은 초점이 되어 그대로 둔다.
 
-   합성 토큰(--b·--b2·--sh·--sh-s·--sh-xs)은 값 안에서 var(--ink) 를
-   가리키고, var() 는 사용 시점에 해석되므로 여기서 다시 정의하지 않아도
-   저절로 밝은 테두리·밝은 하드섀도우로 따라온다. 색 토큰만 뒤집는다.
-
-   'system' 도 App(useSettings)이 OS 값을 읽어 light/dark 중 하나로 못박아
-   <html data-theme> 를 붙이므로, 여기 미디어쿼리는 두지 않는다. 첫 페인트
-   FOUC 는 index.html 의 인라인 스크립트가 막는다.
-
-   대비는 5색을 다크 톤으로 재선정하며 잡았다: 밝은 --ink 글자가 모든 면
-   (paper·cream·sage·sagelt·tan) 위에서 AA(작은 글자 4.5:1)를 넘고, 텍스트로
-   쓰이는 tan·sagelt 도 밝은 잉크 면 위에서 같은 기준을 넘도록 어둡게 내렸다. */
+   'system' 도 App(useSettings)이 OS 값을 읽어 data-theme 로 못박으므로 여기
+   미디어쿼리는 없다. 첫 페인트 FOUC 는 index.html 인라인 스크립트가 막는다. */
 :root[data-theme='dark'] {
-  /* 그라운드는 웜 에스프레소가 아니라 중립 다크 그레이다 — 갈색 배경은 과목
-     색·탄과 섞여 탁해 보였다. 대신 세이지·탄 액센트를 살짝 채도만 올려 warm
-     정체성은 액센트에 남긴다. cream=그라운드(가장 어두움), paper=한 톤 위 카드. */
-  --ink: #ece9e3; /* 웜 오프화이트. 글자·테두리·하드섀도우 */
-  --ink-rgb: 236, 233, 227;
-  --sage: #5c7153; /* .acct·완료 박스. 그레이 위에서 초록이 또렷하다 */
-  --sagelt: #3d4a38; /* 선택 면(nav.on)·힌트·잉크 위 보조 글자 */
-  --cream: #1c1c1e; /* 다크 그레이 그라운드 */
-  --tan: #8b6420; /* 골드 액센트(CTA). 반전된 밝은 urgent 카드 위 작은 글자로도
-                     쓰이므로 AA 를 넘기게 깊은 골드로 둔다 */
-  --muted: #9d9a95; /* 그레이 위 보조 글자 (AA) */
-  --paper: #292a2d; /* 카드·appbar. 그라운드보다 한 톤 밝다 */
+  --ink: #d6d3cc; /* 부드러운 오프화이트. 글자·테두리·하드섀도우 (순백 아님) */
+  --ink-rgb: 214, 211, 204;
+  --sage: #667c5d; /* .acct·완료 박스. 그레이 위 초록 액센트 */
+  --sagelt: #414f3b; /* 작은 선택 면(nav.on)·힌트 */
+  --cream: #1e1f22; /* 다크 그레이 그라운드 */
+  --tan: #a17c30; /* 골드 액센트(CTA·하이라이트) */
+  --muted: #8f8d87; /* 보조 글자 (그라운드·카드 위 AA) */
+  --paper: #292a2e; /* 카드·appbar·입력칸. 그라운드보다 한 톤 밝다 */
+}
+
+/* 큰 강조 면만 어두운 면으로 되돌린다. 라이트에서 이 두 요소는 잉크(어두움)로
+   채우고 크림(밝음)으로 썼는데, 다크에서 그대로 두면 밝은 블록이 된다. 면을
+   어둡게 되돌리면 그 위 글자도 다시 밝게(=--ink) 돌려놔야 한다. */
+:root[data-theme='dark'] .task.urgent {
+  background: #30332d; /* 카드보다 한 톤 밝고 살짝 그린 — "오늘"을 은은히 띄운다 */
+}
+:root[data-theme='dark'] .task.urgent .txt b,
+:root[data-theme='dark'] .task.urgent .ic {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+:root[data-theme='dark'] .task.urgent .txt em,
+:root[data-theme='dark'] .task.urgent .due u {
+  color: var(--muted);
+}
+:root[data-theme='dark'] .task.urgent .txt em s {
+  border-color: var(--muted);
+}
+:root[data-theme='dark'] .task.urgent .ic svg {
+  stroke: var(--ink);
+}
+:root[data-theme='dark'] .task.urgent .due {
+  color: #d6a94f; /* 어두운 카드 위에서 뜨는 밝은 앰버. 깊은 --tan 은 여기서 묻힌다 */
+}
+:root[data-theme='dark'] .task.urgent .box {
+  background: var(--paper);
+  border-color: var(--ink);
+}
+
+:root[data-theme='dark'] .row.danger {
+  background: #3a2a2a; /* 어두운 웜 레드 틴트. 밝은 블록 대신 위험을 색으로 알린다 */
+}
+:root[data-theme='dark'] .row.danger .rl b {
+  color: var(--ink);
+}
+:root[data-theme='dark'] .row.danger .rl em {
+  color: var(--muted);
+}
+:root[data-theme='dark'] .row.danger svg {
+  stroke: var(--ink);
 }
