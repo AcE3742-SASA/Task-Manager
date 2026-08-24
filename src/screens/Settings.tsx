@@ -45,8 +45,9 @@ function Seg<T extends string | number>({
 }
 
 /**
- * 아이콘·설명·2갈래 세그를 담은 설정 행 전체를 눌림 대상으로 만든다.
- * 행 어디를 눌러도 지금 값이 아닌 쪽으로 넘어가고, 세그 칸을 콕 집으면 그 값이 그대로 선택된다.
+ * 아이콘·설명·세그를 담은 설정 행 전체를 눌림 대상으로 만든다.
+ * 행 어디를 눌러도 다음 값으로 넘어가고(2갈래면 반대쪽, 3갈래면 순환),
+ * 세그 칸을 콕 집으면 그 값이 그대로 선택된다.
  */
 function ToggleRow<T extends string | number>({
   icon,
@@ -64,8 +65,8 @@ function ToggleRow<T extends string | number>({
   onPick: (v: T) => void
 }) {
   const flip = () => {
-    const other = options.find((o) => o.v !== value)
-    if (other) onPick(other.v)
+    const i = options.findIndex((o) => o.v === value)
+    onPick(options[(i + 1) % options.length].v)
   }
   return (
     <div
@@ -90,15 +91,23 @@ function ToggleRow<T extends string | number>({
   )
 }
 
-const HOURS = Array.from({ length: 24 }, (_, h) => h)
+/** 끔 + 00:00~23:00. 아침·저녁 알림 시각 선택지. */
+const hourOpts = (offLabel: string): { v: number | null; label: string }[] => [
+  { v: null, label: offLabel },
+  ...Array.from({ length: 24 }, (_, h) => ({ v: h, label: `${String(h).padStart(2, '0')}:00` })),
+]
 
-/** 시각 드롭다운을 담은 설정 행. 행 어디를 눌러도 드롭다운이 열린다. */
-function HourRow({
+/**
+ * null 을 포함한 숫자 드롭다운을 담은 설정 행. 행 어디를 눌러도 드롭다운이 열린다.
+ * 시각(아침·저녁)과 여유 시간("곧 마감")이 같은 모양을 쓰므로 선택지를 밖에서 받는다.
+ */
+function SelectRow({
   icon,
   title,
   desc,
   value,
   label,
+  options,
   onPick,
 }: {
   icon: string
@@ -106,9 +115,9 @@ function HourRow({
   desc: string
   value: number | null
   label: string
+  options: { v: number | null; label: string }[]
   onPick: (v: number | null) => void
 }) {
-  const t = useT()
   const ref = useRef<HTMLSelectElement>(null)
   // 바를 누르면 네이티브 드롭다운을 연다. showPicker 를 못 쓰면 최소한 포커스라도 준다.
   const open = () => {
@@ -146,10 +155,9 @@ function HourRow({
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => onPick(e.target.value === 'off' ? null : Number(e.target.value))}
       >
-        <option value="off">{t('끔', 'Off')}</option>
-        {HOURS.map((h) => (
-          <option key={h} value={h}>
-            {String(h).padStart(2, '0')}:00
+        {options.map((o) => (
+          <option key={o.v === null ? 'off' : o.v} value={o.v === null ? 'off' : String(o.v)}>
+            {o.label}
           </option>
         ))}
       </select>
@@ -197,7 +205,7 @@ function useThisDevice(uid: string) {
 
 export function Settings({ uid }: { uid: string }) {
   const t = useT()
-  const { weekStartsOn, lang, notify } = useAppSettings()
+  const { weekStartsOn, lang, notify, theme } = useAppSettings()
   const dev = useThisDevice(uid)
 
   return (
@@ -250,22 +258,41 @@ export function Settings({ uid }: { uid: string }) {
           </span>
         </div>
 
-        <HourRow
+        <SelectRow
           icon="coffee"
           title={t('아침 요약', 'Morning summary')}
           desc={t('오늘·내일 마감 건수', "Today's and tomorrow's count")}
           value={notify.morningHour}
           label={t('아침 알림 시각', 'Morning notification time')}
+          options={hourOpts(t('끔', 'Off'))}
           onPick={(v) => void saveNotify(uid, { morningHour: v })}
         />
 
-        <HourRow
+        <SelectRow
           icon="hourglass"
           title={t('할일 정리', 'Wrap up')}
           desc={t('오늘 받은 과제 넣기', "Add today's assignments")}
           value={notify.eveningHour}
           label={t('저녁 알림 시각', 'Evening notification time')}
+          options={hourOpts(t('끔', 'Off'))}
           onPick={(v) => void saveNotify(uid, { eveningHour: v })}
+        />
+
+        <SelectRow
+          icon="bell"
+          title={t('곧 마감 알림', 'Due soon alert')}
+          desc={t('마감 전 미리 알림', 'A heads-up before a deadline')}
+          value={notify.soonBefore}
+          label={t('마감 몇 시간 전', 'How long before the deadline')}
+          options={[
+            { v: null, label: t('끔', 'Off') },
+            { v: 1, label: t('1시간 전', '1h before') },
+            { v: 2, label: t('2시간 전', '2h before') },
+            { v: 3, label: t('3시간 전', '3h before') },
+            { v: 6, label: t('6시간 전', '6h before') },
+            { v: 12, label: t('12시간 전', '12h before') },
+          ]}
+          onPick={(v) => void saveNotify(uid, { soonBefore: v })}
         />
 
         <ToggleRow
@@ -290,6 +317,19 @@ export function Settings({ uid }: { uid: string }) {
             { v: 'en' as const, label: 'EN' },
           ]}
           onPick={(v) => saveSettings(uid, { lang: v })}
+        />
+
+        <ToggleRow
+          icon="palette"
+          title={t('화면 모드', 'Appearance')}
+          desc={t('밝게·어둡게·기기 설정', 'Light, dark, or your device')}
+          value={theme}
+          options={[
+            { v: 'system' as const, label: t('자동', 'Auto') },
+            { v: 'light' as const, label: t('밝게', 'Light') },
+            { v: 'dark' as const, label: t('어둡게', 'Dark') },
+          ]}
+          onPick={(v) => saveSettings(uid, { theme: v })}
         />
 
         <div className="row">

@@ -134,8 +134,8 @@ We'll know we're right when **한 학기(약 16주) 동안 본인이 이 앱을 
 
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
-| 7 | 알림 | 사용자가 정한 시각에 아침 "요약 리뷰"와 저녁 "할일 정리" 알림이 오고, 아이폰 PWA와 데스크탑에서 실제로 수신된다. **마감 임박 알림은 2026-08-23 설계에서 제외했다** — 기한이 대부분 23:59로 몰려 저녁 알림과 겹친다. 매시 cron 인프라는 깔리므로 나중에 분기 하나로 붙는다. | in-progress — 코드 완료(v1.1.0), 실기기 수신 검증 대기 | spec `docs/superpowers/specs/2026-08-23-release2-notifications-design.md` · plan `docs/superpowers/plans/2026-08-23-m7-notifications.md` |
-| 8 | 다크 모드 | 라이트 모드에서 확정된 색 역할을 다크 그라운드로 옮긴다. `#34170D`가 배경 후보. | pending | — |
+| 7 | 알림 | 사용자가 정한 시각에 아침 "요약 리뷰"와 저녁 "할일 정리" 알림이 오고, 아이폰 PWA와 데스크탑에서 실제로 수신된다. 마감 임박 알림은 2026-08-23 설계에서 미뤘다가 **v1.1.2 에서 붙였다** — 매시 cron 안에 과제별 사건 분기(`countDueSoon`)를 더한 것이며, 여유 시간을 Settings 에서 고른다(기본 끔). | in-progress — 코드 완료(v1.1.2), 실기기 수신 검증 대기 | spec `docs/superpowers/specs/2026-08-23-release2-notifications-design.md` · plan `docs/superpowers/plans/2026-08-23-m7-notifications.md` |
+| 8 | 다크 모드 | 라이트 모드에서 확정된 색 역할을 다크 그라운드로 옮긴다. `#34170D` 계열이 배경. 토큰(`tokens.css`)만 뒤집어 `--b`·`--sh` 등 합성 토큰이 저절로 따라오게 했고, Settings 에 자동/밝게/어둡게 선택을 뒀다. | in-progress — 코드 완료(v1.1.2), 실기기 확인 대기 | — |
 
 ## Ownership — 사용자가 직접 해야 하는 일 vs 에이전트가 할 수 있는 일
 
