@@ -56,26 +56,21 @@ export function nextDue(slots: Slot[], now: Date, weekStartsOn = DEFAULT_WEEK_ST
   return fromKst(p.y, p.m, nextWeekStart + offset - 1, 23, 59)
 }
 
-export type Group = '오늘' | '내일' | '이번 주' | '미정' | '나중' | '완료'
-export const GROUPS: Group[] = ['오늘', '내일', '이번 주', '미정', '나중', '완료']
+export type Group = '오늘' | '내일' | '7일 내' | '미정' | '나중' | '완료'
+export const GROUPS: Group[] = ['오늘', '내일', '7일 내', '미정', '나중', '완료']
 
 /**
  * 기한이 지난 것은 별도 그룹을 만들지 않고 "오늘" 맨 위로 올린다 (2026-08-20 결정).
- * 기한을 아예 안 잡은 할일(due = null)은 "미정"으로 묶어 "이번 주"와 "나중" 사이에 둔다.
+ * 기한을 아예 안 잡은 할일(due = null)은 "미정"으로 묶어 "7일 내"와 "나중" 사이에 둔다.
+ * "7일 내"는 주 경계와 무관하게 오늘로부터 7일 안에 드는 기한이다 (2026-08-25 결정).
  */
-export function groupOf(
-  due: Date | null,
-  now: Date,
-  done: boolean,
-  weekStartsOn = DEFAULT_WEEK_START,
-): Group {
+export function groupOf(due: Date | null, now: Date, done: boolean): Group {
   if (done) return '완료'
   if (!due) return '미정'
   const diff = kstDayNumber(due) - kstDayNumber(now)
   if (diff <= 0) return '오늘'
   if (diff === 1) return '내일'
-  const untilWeekEnd = 6 - ((kstParts(now).day - weekStartsOn + 7) % 7)
-  return diff <= untilWeekEnd ? '이번 주' : '나중'
+  return diff <= 7 ? '7일 내' : '나중'
 }
 
 /**

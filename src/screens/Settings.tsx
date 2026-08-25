@@ -307,7 +307,7 @@ export function Settings({ uid }: { uid: string }) {
         <ToggleRow
           icon="calendar"
           title={t('주 시작 요일', 'Week starts on')}
-          desc={t('“이번 주”와 기한 계산의 기준', 'Sets “this week” and due dates')}
+          desc={t('달력 주 시작과 기한 계산의 기준', 'Sets calendar week start and due dates')}
           value={weekStartsOn}
           options={[
             { v: 1 as const, label: t('월', 'Mon') },

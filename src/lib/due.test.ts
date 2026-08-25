@@ -153,10 +153,10 @@ describe('groupOf', () => {
     expect(groupOf(at('2026-07-01T14:59:00Z'), now, false)).toBe('오늘')
   })
 
-  it('내일 · 이번 주 · 나중', () => {
+  it('내일 · 7일 내 · 나중', () => {
     expect(groupOf(at('2026-08-21T14:59:00Z'), now, false)).toBe('내일')
-    expect(groupOf(at('2026-08-23T14:59:00Z'), now, false)).toBe('이번 주') // 일요일 = 이번 주 끝
-    expect(groupOf(at('2026-08-24T14:59:00Z'), now, false)).toBe('나중') // 다음 월요일
+    expect(groupOf(at('2026-08-27T14:59:00Z'), now, false)).toBe('7일 내') // 오늘(8/20)로부터 7일째
+    expect(groupOf(at('2026-08-28T14:59:00Z'), now, false)).toBe('나중') // 8일째 = 나중
   })
 
   it('완료는 기한과 무관하게 완료', () => {
@@ -171,8 +171,8 @@ describe('groupOf', () => {
 })
 
 describe('그룹 순서', () => {
-  it('미정은 이번 주와 나중 사이에 온다', () => {
-    expect(GROUPS).toEqual(['오늘', '내일', '이번 주', '미정', '나중', '완료'])
+  it('미정은 7일 내와 나중 사이에 온다', () => {
+    expect(GROUPS).toEqual(['오늘', '내일', '7일 내', '미정', '나중', '완료'])
   })
 })
 
