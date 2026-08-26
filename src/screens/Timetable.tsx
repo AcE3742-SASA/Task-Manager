@@ -60,6 +60,12 @@ export function Timetable({ uid }: { uid: string }) {
   if (!loading && subjects.length === 0) {
     return (
       <Screen title={t('시간표', 'Timetable')}>
+        {/* 과목 화면과 같이, 등록 버튼을 안내문 위에 둔다. 스크롤해야 보이면 안 된다. */}
+        <div className="form">
+          <Link className="bigbtn" to="/subjects">
+            {t('과목 등록하러 가기', 'Go register a subject')}
+          </Link>
+        </div>
         <EmptyState
           icon={<IconCalendar />}
           title={t('배치할 과목이 없다', 'Nothing to place yet')}
@@ -68,11 +74,6 @@ export function Timetable({ uid }: { uid: string }) {
             'Register subjects first. Research and activity blocks work as subjects too.',
           )}
         />
-        <div className="form">
-          <Link className="bigbtn" to="/subjects">
-            {t('과목 등록하러 가기', 'Go register a subject')}
-          </Link>
-        </div>
       </Screen>
     )
   }
