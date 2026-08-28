@@ -1,0 +1,9 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [
+      "brag-output/composition/index.html"
+    ],
+    "ignoreValues": []
+  }
+}

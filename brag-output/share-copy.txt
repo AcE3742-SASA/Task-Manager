@@ -1,0 +1,3 @@
+SASA 할 일 is now live.
+Auto-filled due dates from your class schedule, a Today/Tomorrow/Next-7-days list, and a timetable that fills itself in — all in one place.
+Built for one student. Runs for one student.
