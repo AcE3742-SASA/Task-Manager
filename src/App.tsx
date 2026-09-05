@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
+import { FocusDock } from './components/FocusDock'
 import { SettingsContext, useSettings } from './lib/settings'
 import { useAuth } from './lib/useAuth'
 import { Calendar } from './screens/Calendar'
@@ -34,6 +35,8 @@ function Shell({ user }: { user: User }) {
         <Route path="/subjects/:id" element={<SubjectEdit uid={user.uid} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {/* 높이 0 인 칸에 얹혀 탭바 바로 위에 뜬다 — 어느 화면이든 자리가 같다. */}
+      <FocusDock uid={user.uid} />
       <BottomNav />
     </div>
     </SettingsContext.Provider>

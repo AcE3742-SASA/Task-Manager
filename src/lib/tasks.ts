@@ -52,6 +52,12 @@ export type Task = TaskInput &
     done: boolean
     doneAt: Date | null
     createdAt: Date | null
+    /**
+     * "오늘 끝낼 것" 목록에 넣은 날 (KST, YYYY-MM-DD). 안 넣었으면 null.
+     * 플래그가 아니라 날짜인 이유는 자정이 지나면 저절로 오늘이 아니게 되기 때문이다.
+     * 폼이 다루는 값이 아니라 done 과 같은 앱 상태라 TaskInput 에는 넣지 않는다.
+     */
+    focusDate: string | null
   }
 
 const toDate = (v: unknown): Date | null => (v instanceof Timestamp ? v.toDate() : null)
@@ -95,6 +101,16 @@ export function removeTask(uid: string, id: string) {
 /** 기한만 하루 뒤로 민다. 완료·등록 지표·다른 필드는 건드리지 않는다. */
 export function snoozeTask(uid: string, task: Task, next: Date) {
   return updateDoc(doc(col(uid), task.id), { due: Timestamp.fromDate(next) })
+}
+
+/**
+ * "오늘 끝낼 것" 목록에 넣고 뺀다. 원래 목록에서는 아무것도 사라지지 않는다 —
+ * 이 필드는 어디에 또 보여줄지만 정하고, 할일 자체는 그대로 제자리에 남는다.
+ */
+export function toggleFocus(uid: string, task: Task, today: string) {
+  return updateDoc(doc(col(uid), task.id), {
+    focusDate: task.focusDate === today ? null : today,
+  })
 }
 
 export async function toggleDone(uid: string, task: Task) {
@@ -155,6 +171,8 @@ export function useTasks(uid: string): State {
               done: !!v.done,
               doneAt: toDate(v.doneAt),
               createdAt: toDate(v.createdAt),
+              // 1.3.0 이전 문서에는 이 필드가 없다.
+              focusDate: v.focusDate ?? null,
               dueWasDefault: !!v.dueWasDefault,
               entryMs: v.entryMs ?? 0,
             }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { Screen } from '../components/Screen'
@@ -8,12 +8,62 @@ import { SubjectIcon } from '../components/subject-icons'
 import { auth } from '../lib/firebase'
 import { useT } from '../lib/i18n'
 import { NeedsFreshLogin, deleteAccount, wipeSemester } from '../lib/wipe'
+import { downloadBundle, exportAll, importAll, parseBundle } from '../lib/transfer'
 
 export function Profile({ user }: { user: User }) {
   const t = useT()
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const name = user.displayName ?? t('이름 없음', 'No name')
+  const filePick = useRef<HTMLInputElement>(null)
+
+  async function exportData() {
+    setBusy(true)
+    setMsg(null)
+    try {
+      const bundle = await exportAll(user.uid)
+      downloadBundle(bundle)
+      setMsg(
+        t(
+          `내려받았다 — 과목 ${bundle.subjects.length}개, 할 일 ${bundle.tasks.length}건. 새 계정으로 로그인해 이 파일을 가져오면 된다.`,
+          `Downloaded ${bundle.subjects.length} subjects and ${bundle.tasks.length} tasks. Sign in with the new account and import this file.`,
+        ),
+      )
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e))
+    }
+    setBusy(false)
+  }
+
+  /**
+   * 가져오기는 이 계정의 과목·할 일을 통째로 갈아 끼운다. 합치지 않는다 —
+   * 두 번 눌러도 결과가 같아야 하기 때문이다. 지우기 전에 반드시 확인을 받는다.
+   */
+  async function importData(file: File) {
+    setBusy(true)
+    setMsg(null)
+    try {
+      const bundle = parseBundle(await file.text())
+      const ok = confirm(
+        t(
+          `이 계정의 과목 · 할 일을 모두 지우고 파일 내용(과목 ${bundle.subjects.length}개, 할 일 ${bundle.tasks.length}건)으로 바꾼다. 되돌릴 수 없다.`,
+          `Erase this account's subjects and tasks, replacing them with the file (${bundle.subjects.length} subjects, ${bundle.tasks.length} tasks). This cannot be undone.`,
+        ),
+      )
+      if (ok) {
+        const n = await importAll(user.uid, bundle)
+        setMsg(
+          t(
+            `가져왔다 — 과목 ${n.subjects}개, 할 일 ${n.tasks}건.`,
+            `Imported ${n.subjects} subjects and ${n.tasks} tasks.`,
+          ),
+        )
+      }
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e))
+    }
+    setBusy(false)
+  }
 
   async function reset() {
     if (!confirm(t(
@@ -110,6 +160,45 @@ export function Profile({ user }: { user: User }) {
           </span>
         </button>
       </div>
+
+      <span className="ttlbl">{t('계정 이전', 'MOVE ACCOUNT')}</span>
+      <div className="rows">
+        <button className="row" onClick={exportData} disabled={busy}>
+          <SubjectIcon id="folder" />
+          <span className="rl">
+            <b>{t('데이터 내보내기', 'Export data')}</b>
+            <em>{t('시간표 · 할 일 · 설정을 파일 하나로', 'Timetable, tasks, and settings as one file')}</em>
+          </span>
+        </button>
+
+        <button className="row" onClick={() => filePick.current?.click()} disabled={busy}>
+          <SubjectIcon id="report" />
+          <span className="rl">
+            <b>{t('데이터 가져오기', 'Import data')}</b>
+            <em>{t('이 계정의 내용을 파일로 덮어쓴다', "Replaces this account's contents with the file")}</em>
+          </span>
+        </button>
+        {/* 행 전체가 눌림 대상이라 파일 입력은 숨겨 둔다. */}
+        <input
+          ref={filePick}
+          type="file"
+          accept="application/json,.json"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            // 같은 파일을 두 번 고를 수 있어야 하므로 값을 비운다.
+            e.target.value = ''
+            if (file) void importData(file)
+          }}
+        />
+      </div>
+
+      <p className="rows-note">
+        {t(
+          '옮기는 순서 — 지금 계정에서 내보내고, 로그아웃한 뒤 새 구글 계정으로 로그인해 그 파일을 가져온다. 알림 설정은 기기마다 따로라 새 계정에서 다시 켜야 한다.',
+          'To move: export here, sign out, sign in with the new Google account, and import the file. Notifications are per-device, so turn them on again there.',
+        )}
+      </p>
 
       {msg && (
         <div className="form">

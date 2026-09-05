@@ -542,9 +542,10 @@
 }
 /* 고정폭 38px + flex-wrap 이면 폭이 조금만 달라져도 여덟 번째 색만 다음 줄로
    떨어져 나간다. 8열 격자로 고정해 어떤 화면 폭에서도 한 줄에 들어오게 한다. */
+/* 12색이 6칸씩 두 줄로 떨어진다. 8열이면 둘째 줄이 4개만 남아 어긋난다. */
 .swatches {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
 }
 .swatch {
@@ -844,6 +845,21 @@
 .task.urgent .snooze svg {
   stroke: var(--tan);
 }
+/* 잉크 카드 위에서는 미루기와 같은 대접. 꽂힌 상태만 채워진 면으로 튀어나온다. */
+.task.urgent .pin {
+  border-color: var(--sagelt);
+}
+.task.urgent .pin svg {
+  stroke: var(--tan);
+}
+.task.urgent .pin.on {
+  background: var(--tan);
+  border-color: var(--tan);
+}
+.task.urgent .pin.on svg {
+  stroke: var(--ink);
+  fill: var(--ink);
+}
 
 .task.done {
   box-shadow: none;
@@ -1095,6 +1111,7 @@
 .task.urgent .hit:focus-visible,
 .task.urgent .box:focus-visible,
 .task.urgent .snooze:focus-visible,
+.task.urgent .pin:focus-visible,
 .nav a.mid:focus-visible {
   outline-color: var(--tan);
 }
@@ -1107,6 +1124,7 @@
 .seg button,
 .task .box,
 .task .snooze,
+.task .pin,
 .chip,
 .swatch {
   position: relative;
@@ -1116,6 +1134,7 @@
 .seg button::after,
 .task .box::after,
 .task .snooze::after,
+.task .pin::after,
 .chip::after,
 .swatch::after {
   content: '';
@@ -1143,6 +1162,11 @@
 }
 /* 미루기와 체크박스 사이 간격은 11px. 서로의 타깃이 겹치지 않게 안쪽은 5px 만 넓힌다. */
 .task .snooze::after {
+  left: -6px;
+  right: -5px;
+}
+/* 핀도 같은 규칙. 오른쪽 5 + 미루기 왼쪽 6 = 간격 11 이라 딱 맞닿고 겹치지는 않는다. */
+.task .pin::after {
   left: -6px;
   right: -5px;
 }
@@ -1214,6 +1238,245 @@
   .swatch,
   .calhead .step,
   .empty .mark {
+    transition-duration: 1ms;
+  }
+}
+
+/* ─── 색 직접 고르기 (시안 07 SUBJECT EDIT 확장) ───
+   프리셋 격자 아래 한 줄. 네이티브 피커 + 실제 칸 미리보기. */
+.pickcolor {
+  margin-top: 8px;
+  border: var(--b2);
+  background: var(--paper);
+  box-shadow: var(--sh-xs);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* 브라우저 기본 색 견본. 크롬·사파리가 안쪽 여백을 넣어 두어 걷어낸다. */
+.pickcolor input[type='color'] {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: var(--b2);
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+.pickcolor input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.pickcolor input[type='color']::-webkit-color-swatch,
+.pickcolor input[type='color']::-moz-color-swatch {
+  border: none;
+}
+.pickcolor .rl {
+  flex: 1;
+  min-width: 0;
+}
+.pickcolor .rl b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 400;
+}
+.pickcolor .rl em {
+  font-style: normal;
+  font-family: var(--pix);
+  font-size: 10px;
+  color: var(--muted);
+  display: block;
+  margin-top: 3px;
+}
+/* 시간표 칸과 같은 비율·서체. 고른 색에서 글자가 읽히는지 여기서 바로 보인다. */
+.swpreview {
+  flex: none;
+  width: 56px;
+  height: 36px;
+  border: var(--b2);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ─── 오늘 끝낼 것 (핀) ───
+   미루기 왼쪽. 꽂히면 채워져서 한눈에 구분된다. */
+.task .pin {
+  width: 32px;
+  height: 32px;
+  border: var(--b2);
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  padding: 0;
+}
+.task .pin svg {
+  width: 17px;
+  height: 17px;
+  stroke: var(--muted);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.task .pin.on {
+  background: var(--tan);
+}
+.task .pin.on svg {
+  stroke: var(--ink);
+  fill: var(--ink);
+}
+
+/* ─── 오늘 끝낼 것 도크 ───
+   높이 0 인 칸에 얹혀 탭바 바로 위에 뜬다. 안전영역·탭 높이를 계산할 필요가 없다. */
+.dockslot {
+  position: relative;
+  height: 0;
+  flex: none;
+  z-index: 30;
+}
+.dock {
+  position: absolute;
+  right: var(--gut);
+  bottom: 9px;
+  width: min(304px, calc(100% - var(--gut) * 2));
+  border: var(--b);
+  background: var(--paper);
+  box-shadow: var(--sh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dockbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  background: var(--sage);
+  border-bottom: var(--b2);
+  width: 100%;
+  text-align: left;
+}
+/* 접히면 아래 목록이 없어 경계선이 허공에 뜬다. */
+.dockbar:only-child {
+  border-bottom: 0;
+}
+.dockbar b {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dockcount {
+  font-family: var(--pix);
+  font-size: 10.5px;
+  border: var(--b2);
+  background: var(--paper);
+  padding: 1px 6px;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.dockbar .chev {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  stroke: var(--ink);
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linecap: square;
+  transition: transform 0.18s var(--ease);
+}
+.dockbar .chev.up {
+  transform: rotate(180deg);
+}
+/* 목록이 길어도 화면 절반을 넘지 않는다. 팝업이지 화면이 아니다. */
+.docklist {
+  max-height: 42dvh;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dtask {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: var(--b2);
+  background: var(--cream);
+  padding: 6px 7px;
+}
+.dtask.done {
+  opacity: 0.55;
+}
+.dtask.done .dhit b {
+  text-decoration: line-through;
+}
+.dbox {
+  width: 24px;
+  height: 24px;
+  border: var(--b2);
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+  padding: 0;
+}
+.dbox svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--ink);
+  fill: none;
+  stroke-width: 3.4;
+  stroke-linecap: square;
+}
+.dhit {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  background: none;
+}
+.dhit b {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dhit em {
+  font-style: normal;
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dx {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: var(--b2);
+  background: var(--paper);
+  color: var(--muted);
+  font-family: var(--pix);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dockbar .chev {
     transition-duration: 1ms;
   }
 }

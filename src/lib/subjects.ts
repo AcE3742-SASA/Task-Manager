@@ -15,11 +15,32 @@ export const DAY_LABEL_EN: Record<Day, string> = {
 /** 시간표 양식에는 10교시 칸도 있지만 실제로 배정된 적이 없어 9까지만 그린다. */
 export const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-/** 시안의 색칩 4종. 12개 과목을 4색으로 구분하지 않는다 — 식별은 아이콘과 줄임말이 한다. */
 /** 줄임말 길이 상한. 격자 칸 폭(약 63px)이 정하는 값이라 늘릴 때 칸을 같이 본다. */
 export const SHORT_MAX = 4
 
-export const COLORS = ['#8FA28A', '#C7D3C0', '#C8A96B', '#34170D']
+/**
+ * 시안의 4색으로 시작해 12색으로 늘렸다. 앞 4개는 순서까지 그대로 둔다 —
+ * 이미 저장된 과목이 계속 "고른 색"으로 보여야 하기 때문이다.
+ * 톤은 시안의 채도 낮은 레트로 계열에 맞췄다. 여기 없는 색은 피커로 직접 고른다.
+ *
+ * 명도 0.161~0.237 은 피한다. 그 구간은 ink 로도 cream 으로도 4.5:1 이 안 나오는
+ * 사각지대라, 처음 고른 테라코타·올리브·청록이 전부 거기 걸려 밝은 쪽으로 옮겼다.
+ * subjects.test.ts 가 12색 전부를 다시 잰다.
+ */
+export const COLORS = [
+  '#8FA28A', // 세이지
+  '#C7D3C0', // 연세이지
+  '#C8A96B', // 탠
+  '#34170D', // 잉크
+  '#D08A62', // 테라코타
+  '#9E4A3C', // 벽돌
+  '#D4A29A', // 마른 장미
+  '#E8DFC8', // 크림
+  '#A5A05C', // 카키
+  '#7FA9A4', // 청록
+  '#3D5A73', // 남색
+  '#7D5A75', // 자두
+]
 
 export type Slot = { day: Day; period: number; teacher?: string; room?: string }
 
@@ -123,8 +144,42 @@ export function byCell(subjects: Subject[]): Map<string, Placed> {
   return m
 }
 
-/** ink 색 과목은 칸 배경이 어두우므로 글자를 뒤집는다. */
-export const onColor = (color: string) => (color.toLowerCase() === '#34170d' ? 'var(--cream)' : 'var(--ink)')
+/** 시안의 두 극단. 과목 색 위에 올릴 글자는 이 둘 중 하나다. */
+const INK = '#34170D'
+const CREAM = '#F7F4ED'
+
+function channel(v: number): number {
+  const c = v / 255
+  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+}
+
+/** WCAG 상대 휘도. `#abc` 와 `#aabbcc` 를 받는다. */
+export function luminance(hex: string): number {
+  const h = hex.trim().replace('#', '')
+  const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h
+  const n = Number.parseInt(full, 16)
+  // 못 읽는 값이면 밝은 배경으로 치고 어두운 글자를 쓴다 — 흰 칸에 흰 글자보다 낫다.
+  if (full.length !== 6 || Number.isNaN(n)) return 1
+  return (
+    0.2126 * channel((n >> 16) & 255) +
+    0.7152 * channel((n >> 8) & 255) +
+    0.0722 * channel(n & 255)
+  )
+}
+
+const contrast = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+
+/**
+ * 칸 배경 위 글자색. 피커로 아무 색이나 고를 수 있게 되면서 특정 색 하드코딩이
+ * 통하지 않는다 — ink 와 cream 중 대비가 큰 쪽을 고른다 (기존 4색 결과는 그대로다).
+ *
+ * 토큰이 아니라 실제 hex 를 돌려주는 것이 중요하다. 배경은 저장된 고정 hex 인데
+ * var(--ink) 는 다크모드에서 밝은 색으로 뒤집혀, 밝은 칸 위에 밝은 글자가 됐다.
+ */
+export function onColor(color: string): string {
+  const l = luminance(color)
+  return contrast(l, luminance(INK)) >= contrast(l, luminance(CREAM)) ? INK : CREAM
+}
 
 /**
  * 격자 한 칸에 과목을 놓거나(target) 비운다(null).

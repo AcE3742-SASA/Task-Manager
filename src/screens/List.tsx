@@ -3,10 +3,10 @@ import { Screen } from '../components/Screen'
 import { EmptyState } from '../components/EmptyState'
 import { TaskRow } from '../components/TaskRow'
 import { IconList } from '../components/icons'
-import { GROUPS, groupOf, snoozeDue } from '../lib/due'
+import { GROUPS, groupOf, kstToday, snoozeDue } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useSubjects } from '../lib/subjects'
-import { snoozeTask, toggleDone, useTasks } from '../lib/tasks'
+import { snoozeTask, toggleDone, toggleFocus, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
 
 const DATE = new Intl.DateTimeFormat('ko-KR', {
@@ -38,6 +38,7 @@ export function List({ uid }: { uid: string }) {
 
   // 렌더 시점에 읽는다. 자정 타이머는 두지 않는다 — 앱을 다시 열면 맞는다.
   const now = new Date()
+  const today = kstToday(now)
   const byId = new Map(subjects.map((s) => [s.id, s]))
 
   const grouped = GROUPS.map((g) => ({
@@ -75,9 +76,11 @@ export function List({ uid }: { uid: string }) {
               subject={task.subjectId ? byId.get(task.subjectId) : undefined}
               now={now}
               urgent={group === '오늘'}
+              focused={task.focusDate === today}
               onOpen={() => navigate(`/task/${task.id}`)}
               onToggle={() => toggleDone(uid, task)}
               onSnooze={() => snoozeTask(uid, task, snoozeDue(task.due, now))}
+              onFocus={() => toggleFocus(uid, task, today)}
             />
           ))}
         </section>

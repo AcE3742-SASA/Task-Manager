@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
 import { TaskRow } from '../components/TaskRow'
-import { dateFromDayNumber, dayNumber, kstDate, kstYmd, monthGrid, snoozeDue, weekStrip } from '../lib/due'
+import { dateFromDayNumber, dayNumber, kstDate, kstToday, kstYmd, monthGrid, snoozeDue, weekStrip } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useAppSettings } from '../lib/settings'
 import { useSubjects } from '../lib/subjects'
-import { snoozeTask, toggleDone, useTasks } from '../lib/tasks'
+import { snoozeTask, toggleDone, toggleFocus, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
 
 const WD_KO = ['일', '월', '화', '수', '목', '금', '토']
@@ -24,6 +24,8 @@ export function Calendar({ uid }: { uid: string }) {
 
   const [mode, setMode] = useState<'month' | 'week'>('month')
   const today = new Date()
+  /** 오늘 끝낼 것 목록의 키. 여기서 today 는 Date 라 문자열은 따로 둔다. */
+  const todayKey = kstToday(today)
   const [cursor, setCursor] = useState(today)
   const [picked, setPicked] = useState<number>(dayNumber(today))
 
@@ -198,9 +200,11 @@ export function Calendar({ uid }: { uid: string }) {
             subject={task.subjectId ? byId.get(task.subjectId) : undefined}
             now={today}
             urgent={false}
+            focused={task.focusDate === todayKey}
             onOpen={() => navigate(`/task/${task.id}`)}
             onToggle={() => toggleDone(uid, task)}
             onSnooze={() => snoozeTask(uid, task, snoozeDue(task.due, today))}
+            onFocus={() => toggleFocus(uid, task, todayKey)}
           />
         ))
       )}

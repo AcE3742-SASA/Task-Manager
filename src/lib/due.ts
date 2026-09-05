@@ -56,6 +56,17 @@ export function nextDue(slots: Slot[], now: Date, weekStartsOn = DEFAULT_WEEK_ST
   return fromKst(p.y, p.m, nextWeekStart + offset - 1, 23, 59)
 }
 
+/**
+ * KST 기준 오늘 (YYYY-MM-DD). "오늘 끝낼 것" 목록이 이 문자열로 굴러간다 —
+ * 할일에 날짜를 적어 두면 자정이 지나는 순간 저절로 오늘이 아니게 되므로
+ * 비우는 작업도, 자정 타이머도, 백그라운드 재설정도 필요 없다.
+ */
+export function kstToday(now: Date): string {
+  const p = kstParts(now)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${p.y}-${pad(p.m + 1)}-${pad(p.d)}`
+}
+
 export type Group = '오늘' | '내일' | '7일 내' | '미정' | '나중' | '완료'
 export const GROUPS: Group[] = ['오늘', '내일', '7일 내', '미정', '나중', '완료']
 

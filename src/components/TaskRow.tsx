@@ -12,9 +12,12 @@ type Props = {
   subject?: Subject
   now: Date
   urgent: boolean
+  /** 오늘 끝낼 것 목록에 들어 있는가. 들어 있어도 이 행은 제자리에 그대로 남는다. */
+  focused: boolean
   onOpen: () => void
   onToggle: () => void
   onSnooze: () => void
+  onFocus: () => void
 }
 
 const Check = () => (
@@ -39,7 +42,25 @@ const RepeatMark = () => (
   </svg>
 )
 
-export function TaskRow({ task, subject, now, urgent, onOpen, onToggle, onSnooze }: Props) {
+/** 압정 — "오늘 끝낼 것"에 꽂아 둔다. 채워지면 꽂힌 상태다. */
+const Pin = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M9 3h6l-1 6 4 4H6l4-4z" />
+    <path d="M12 13v8" />
+  </svg>
+)
+
+export function TaskRow({
+  task,
+  subject,
+  now,
+  urgent,
+  focused,
+  onOpen,
+  onToggle,
+  onSnooze,
+  onFocus,
+}: Props) {
   const { lang } = useAppSettings()
   const t = useT()
   const due = formatDue(task.due, now, task.done, lang)
@@ -64,6 +85,21 @@ export function TaskRow({ task, subject, now, urgent, onOpen, onToggle, onSnooze
           <u>{due.sub}</u>
         </span>
       </button>
+      {/* 이미 끝낸 할일을 오늘 목록에 꽂을 이유가 없다. 미루기와 같은 규칙이다. */}
+      {!task.done && (
+        <button
+          className={`pin${focused ? ' on' : ''}`}
+          onClick={onFocus}
+          aria-pressed={focused}
+          aria-label={
+            focused
+              ? t('오늘 끝낼 것에서 빼기', 'Remove from today’s list')
+              : t('오늘 끝낼 것에 넣기', 'Add to today’s list')
+          }
+        >
+          <Pin />
+        </button>
+      )}
       {!task.done && (
         <button className="snooze" onClick={onSnooze} aria-label={t('하루 미루기', 'Postpone a day')}>
           <Snooze />

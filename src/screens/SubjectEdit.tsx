@@ -10,6 +10,7 @@ import {
   COLORS,
   SHORT_MAX,
   createSubject,
+  onColor,
   removeSubject,
   saveSubject,
   useSubjects,
@@ -167,6 +168,23 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
               />
             ))}
           </div>
+
+          {/* 프리셋 밖의 색은 브라우저 기본 피커에 맡긴다. 직접 만들 이유가 없다. */}
+          <label className="pickcolor">
+            <input
+              type="color"
+              value={color.toLowerCase()}
+              onChange={(e) => setColor(e.target.value.toUpperCase())}
+            />
+            <span className="rl">
+              <b>{t('직접 고르기', 'Pick a color')}</b>
+              <em>{color.toUpperCase()}</em>
+            </span>
+            {/* 실제 시간표 칸이 어떻게 보이는지 그대로 보여준다 — 글자색은 자동이다. */}
+            <span className="swpreview" style={{ background: color, color: onColor(color) }}>
+              {short.trim() || t('줄임', 'ABBR')}
+            </span>
+          </label>
         </div>
 
         <button className="bigbtn" disabled={!ready || busy} onClick={submit}>

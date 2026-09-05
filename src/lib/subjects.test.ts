@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SUBJECT_ICONS, ICON_CATEGORIES } from '../components/subject-icons'
-import { byCell, cellKey, normalizeName, onColor } from './subjects'
+import { COLORS, byCell, cellKey, luminance, normalizeName, onColor } from './subjects'
 import type { Subject } from './subjects'
 
 describe('normalizeName', () => {
@@ -64,8 +64,49 @@ describe('byCell', () => {
 })
 
 describe('onColor', () => {
-  it('ink 배경에서만 글자를 뒤집는다', () => {
-    expect(onColor('#34170D')).toBe('var(--cream)')
-    expect(onColor('#8FA28A')).toBe('var(--ink)')
+  const INK = '#34170D'
+  const CREAM = '#F7F4ED'
+  const ratio = (a: string, b: string) => {
+    const [x, y] = [luminance(a), luminance(b)]
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+  }
+
+  it('시안 4색의 판정은 색을 늘리기 전과 같다', () => {
+    expect(onColor('#34170D')).toBe(CREAM)
+    expect(onColor('#8FA28A')).toBe(INK)
+    expect(onColor('#C7D3C0')).toBe(INK)
+    expect(onColor('#C8A96B')).toBe(INK)
+  })
+
+  it('토큰이 아니라 실제 색을 준다 — 배경이 고정 hex 라 테마를 따라가면 안 된다', () => {
+    expect(onColor('#8FA28A').startsWith('#')).toBe(true)
+  })
+
+  it('피커로 고른 임의 색에서도 어두우면 밝은 글자, 밝으면 어두운 글자다', () => {
+    expect(onColor('#000000')).toBe(CREAM)
+    expect(onColor('#1B3A5C')).toBe(CREAM)
+    expect(onColor('#FFFFFF')).toBe(INK)
+    expect(onColor('#FFE9A8')).toBe(INK)
+  })
+
+  it('세 자리 hex 도 읽는다', () => {
+    expect(onColor('#000')).toBe(CREAM)
+    expect(onColor('#fff')).toBe(INK)
+  })
+
+  it('망가진 값이면 어두운 글자로 물러난다 — 흰 칸에 흰 글자보다 낫다', () => {
+    expect(onColor('rebeccapurple')).toBe(INK)
+    expect(onColor('#12')).toBe(INK)
+  })
+
+  it('고른 글자색이 언제나 대비가 더 큰 쪽이다', () => {
+    for (const c of COLORS) {
+      const picked = onColor(c)
+      expect(ratio(c, picked)).toBeGreaterThanOrEqual(ratio(c, picked === INK ? CREAM : INK))
+    }
+  })
+
+  it('프리셋 12색 전부 본문 대비 4.5:1 을 넘긴다', () => {
+    for (const c of COLORS) expect(ratio(c, onColor(c))).toBeGreaterThan(4.5)
   })
 })

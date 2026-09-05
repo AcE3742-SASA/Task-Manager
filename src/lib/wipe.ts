@@ -8,10 +8,13 @@ async function dropAll(uid: string, name: string) {
   if (!db) throw new Error('Firestore 가 설정되지 않았다')
   const snap = await getDocs(collection(db, 'users', uid, name))
   if (snap.empty) return 0
-  // 한 학기 데이터는 많아야 수십 건이라 500개 배치 한 번으로 끝난다.
-  const batch = writeBatch(db)
-  snap.docs.forEach((d) => batch.delete(d.ref))
-  await batch.commit()
+  // 한 학기면 수십 건이지만 writeBatch 상한이 500 이라 끊는다 —
+  // 계정 이전(transfer)이 이 함수로 먼저 비우므로 여러 학기가 쌓인 계정도 지나간다.
+  for (let i = 0; i < snap.docs.length; i += 500) {
+    const batch = writeBatch(db)
+    for (const d of snap.docs.slice(i, i + 500)) batch.delete(d.ref)
+    await batch.commit()
+  }
   return snap.size
 }
 
