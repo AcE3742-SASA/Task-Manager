@@ -91,9 +91,9 @@ function applyTheme(theme: Theme): void | (() => void) {
     document.documentElement.dataset.theme = resolved
     // iOS standalone 은 문서 배경색(= --paper)으로 상태바 띠를 칠하므로 이건
     // 저절로 맞는다. theme-color 는 안드로이드·데스크탑 PWA 용이라 손으로 맞춘다.
-    // 값은 tokens.css 의 --paper 와 동일하게 유지한다.
+    // 실제 토큰을 읽어 팔레트 변경 시 상태바 색이 뒤처지지 않게 한다.
     const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#292a2e' : '#fffdf8')
+    if (meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--paper').trim())
   }
   paint()
   // 'system' 일 때만 OS 변경을 따라간다. 못박은 테마는 리스너가 필요 없다.

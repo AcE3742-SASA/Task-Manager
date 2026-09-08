@@ -17,7 +17,7 @@ const Clock = () => (
   </svg>
 )
 
-type Props = { uid: string; subjects: Subject[]; task?: Task }
+type Props = { uid: string; subjects: Subject[]; task?: Task; initialDue?: Date }
 
 const REPEAT_LABELS: Record<Repeat, { ko: string; en: string }> = {
   none: { ko: '안 함', en: 'Never' },
@@ -26,7 +26,7 @@ const REPEAT_LABELS: Record<Repeat, { ko: string; en: string }> = {
   monthly: { ko: '매월', en: 'Monthly' },
 }
 
-export function TaskForm({ uid, subjects, task }: Props) {
+export function TaskForm({ uid, subjects, task, initialDue }: Props) {
   const navigate = useNavigate()
   const editing = !!task
   const { weekStartsOn, lang } = useAppSettings()
@@ -37,11 +37,11 @@ export function TaskForm({ uid, subjects, task }: Props) {
   const [kind, setKind] = useState<Kind>(task?.kind ?? '과제')
   const [note, setNote] = useState(task?.note ?? '')
   const [repeat, setRepeat] = useState<Repeat>(task?.repeat ?? 'none')
-  const [due, setDue] = useState<Date>(task?.due ?? todayEnd(new Date()))
+  const [due, setDue] = useState<Date>(task?.due ?? initialDue ?? todayEnd(new Date()))
   /** 기한을 아예 잡지 않는 할일인가. 수정 화면에서는 저장된 값(null이면 켜짐)을 따른다. */
   const [noDue, setNoDue] = useState(editing ? task?.due == null : false)
   /** 사용자가 기한을 직접 건드렸는가. 수정 화면에서는 자동 계산 자체를 하지 않는다. */
-  const [dueTouched, setDueTouched] = useState(editing)
+  const [dueTouched, setDueTouched] = useState(editing || !!initialDue)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 

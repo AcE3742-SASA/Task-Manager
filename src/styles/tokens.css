@@ -1,131 +1,80 @@
-/* design/mockup-v1.html 의 :root 를 그대로 옮긴 것.
-   색·글꼴·테두리는 여기서 재해석하지 않는다. 시안이 원본이다.
-   예외는 --muted 하나뿐이고, 그 이유는 바로 아래에 적어 뒀다. */
-
+/* 라이트는 design/mockup-v1.html의 세이지·크림 팔레트.
+   글자, 윤곽선, 그림자, 선택 면은 역할별로 분리해 다크에서도 대비를 지킨다. */
 :root {
+  color-scheme: light;
   --ink: #34170d;
+  --ink-rgb: 52, 23, 13;
   --sage: #8fa28a;
   --sagelt: #c7d3c0;
   --cream: #f7f4ed;
   --tan: #c8a96b;
-  /* 시안 값은 #8a7568 이었다. 크림 위에서 3.96:1 — 9~12px 로 쓰는 보조 텍스트가
-     WCAG AA(4.5:1)를 못 넘겼다. 같은 색상 계열을 유지한 채 8% 어둡게 내려
-     크림 4.99:1 / 페이퍼 5.39:1 로 맞췄다. 눈으로는 거의 같은 회갈색이다. */
+  /* 작은 보조 글자도 크림·페이퍼 위에서 AA 대비를 넘긴다. */
   --muted: #7a6558;
   --paper: #fffdf8;
-  /* --ink 을 알파와 함께 쓰는 자리가 몇 군데 있다(격자·구분선·빈 칸 테두리).
-     rgba() 는 CSS 변수를 알파로 못 받으므로 rgb 성분을 따로 둔다. 다크에서
-     이 성분만 뒤집으면 반투명 잉크선도 함께 밝아진다. --ink 와 값을 맞춘다. */
-  --ink-rgb: 52, 23, 13;
+
+  --line: var(--ink);
+  --shadow: var(--ink);
+  --selected: var(--ink);
+  --on-selected: var(--cream);
+  --selected-icon: var(--tan);
+  --selected-detail: var(--sagelt);
+  --on-accent: var(--ink);
+  --on-sage: var(--ink);
+  --focus: var(--ink);
+  --urgent-bg: var(--ink);
+  --urgent-ink: var(--cream);
+  --urgent-muted: var(--sagelt);
+  --urgent-line: var(--cream);
+  --urgent-border: var(--line);
+  --urgent-control: var(--sagelt);
+  --danger-bg: var(--ink);
+  --danger-ink: var(--cream);
+  --danger-muted: var(--sagelt);
+  --danger-line: var(--line);
 
   --disp: 'MG Rounded', 'Apple SD Gothic Neo', 'Pretendard', system-ui, sans-serif;
   --pix: 'MG Pixel', ui-monospace, 'SFMono-Regular', monospace;
-
-  --b: 3px solid var(--ink);
-  --b2: 2px solid var(--ink);
-  --sh: 7px 7px 0 var(--ink);
-  --sh-s: 4px 4px 0 var(--ink);
-  --sh-xs: 3px 3px 0 var(--ink);
-
-  /* ─── 레이아웃 상수 (시안에는 없던 값. 폴리시 패스에서 정리한 것) ─── */
-  /* 화면마다 12·14·16·18px 로 제각각이던 좌우 여백을 하나로 묶었다.
-     본문 카드(.task/.row)가 쓰던 14px 을 기준으로 삼는다 — 가장 많이 보이는 요소다. */
+  --b: 3px solid var(--line);
+  --b2: 2px solid var(--line);
+  --sh: 7px 7px 0 var(--shadow);
+  --sh-s: 4px 4px 0 var(--shadow);
+  --sh-xs: 3px 3px 0 var(--shadow);
   --gut: 14px;
-  /* 손가락 최소 타깃. 시각 크기는 그대로 두고 ::after 로 히트 영역만 넓히는 데 쓴다. */
   --tap: 44px;
-  /* appbar 를 고정 높이로 못박는다. 탭을 옮길 때마다 본문이 최대 4.7px 튀었다. */
   --bar: 60px;
-  /* 눌림 반응용. 감속만 하고 튕기지 않는다. */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ─── 다크 모드 (M8) ──────────────────────────────────────────────
-   라이트를 기계적으로 뒤집지 않는다. 순수 토큰 반전은 "잉크로 채운 강조"
-   (urgent 카드·danger 행 같은 큰 면)를 밝은 블록으로 만들어 어두운 화면에서
-   눈을 찌르고, 순백에 가까운 글자는 대비가 과해 오래 보기 불편했다.
-   여기서는 편안함을 목표로 다시 짠다.
-
-   방침:
-   1) 그라운드는 중립 다크 그레이(웜 에스프레소는 과목색·탄과 섞여 탁했다).
-      cream=그라운드(가장 어두움), paper=한 톤 위 카드.
-   2) --ink 는 순백이 아니라 부드러운 오프화이트다. 본문 대비를 ~9:1 로 낮춰
-      (14:1 순백 대신) 눈이 편하게 한다. 테두리·하드섀도우도 이 톤이라
-      네오브루탈리즘 특유의 굵은 선이 은은해진다. 합성 토큰(--b·--sh 등)은
-      var(--ink) 를 사용 시점에 읽어 저절로 따라오므로 여기선 색만 정한다.
-   3) 액센트(세이지·탄)에 warm 정체성을 남긴다.
-   4) 큰 "채워진 강조" 면(urgent·danger)만 아래 오버라이드에서 밝은 블록 대신
-      살짝 띄운 어두운 면으로 되돌린다. 작은 강조(세그 토글·+버튼·달력 선택·
-      체크박스)는 밝은 블록이 오히려 기분 좋은 초점이 되어 그대로 둔다.
-
-   'system' 도 App(useSettings)이 OS 값을 읽어 data-theme 로 못박으므로 여기
-   미디어쿼리는 없다. 첫 페인트 FOUC 는 index.html 인라인 스크립트가 막는다. */
+/* 밤의 종이·이끼·황동. 굵은 윤곽과 단단한 그림자는 유지하되,
+   글자처럼 밝게 빛나던 선을 걷고 면마다 깊이를 준다.
+   과목에 저장된 사용자 색은 이 팔레트와 별개로 그대로 표시한다. */
 :root[data-theme='dark'] {
-  --ink: #d6d3cc; /* 부드러운 오프화이트. 글자·테두리·하드섀도우 (순백 아님) */
-  --ink-rgb: 214, 211, 204;
-  --sage: #667c5d; /* .acct·완료 박스. 그레이 위 초록 액센트 */
-  --sagelt: #414f3b; /* 작은 선택 면(nav.on)·힌트 */
-  --cream: #1e1f22; /* 다크 그레이 그라운드 */
-  --tan: #a17c30; /* 골드 액센트(CTA·하이라이트) */
-  --muted: #8f8d87; /* 보조 글자 (그라운드·카드 위 AA) */
-  --paper: #292a2e; /* 카드·appbar·입력칸. 그라운드보다 한 톤 밝다 */
-}
-
-/* 큰 강조 면만 어두운 면으로 되돌린다. 라이트에서 이 두 요소는 잉크(어두움)로
-   채우고 크림(밝음)으로 썼는데, 다크에서 그대로 두면 밝은 블록이 된다. 면을
-   어둡게 되돌리면 그 위 글자도 다시 밝게(=--ink) 돌려놔야 한다. */
-:root[data-theme='dark'] .task.urgent {
-  background: #30332d; /* 카드보다 한 톤 밝고 살짝 그린 — "오늘"을 은은히 띄운다 */
-}
-:root[data-theme='dark'] .task.urgent .txt b,
-:root[data-theme='dark'] .task.urgent .ic {
-  color: var(--ink);
-  border-color: var(--ink);
-}
-:root[data-theme='dark'] .task.urgent .txt em,
-:root[data-theme='dark'] .task.urgent .due u {
-  color: var(--muted);
-}
-:root[data-theme='dark'] .task.urgent .txt em s {
-  border-color: var(--muted);
-}
-:root[data-theme='dark'] .task.urgent .txt em .repeat-mark {
-  stroke: var(--muted);
-}
-:root[data-theme='dark'] .task.urgent .ic svg {
-  stroke: var(--ink);
-}
-:root[data-theme='dark'] .task.urgent .due {
-  color: #d6a94f; /* 어두운 카드 위에서 뜨는 밝은 앰버. 깊은 --tan 은 여기서 묻힌다 */
-}
-:root[data-theme='dark'] .task.urgent .box {
-  background: var(--paper);
-  border-color: var(--ink);
-}
-/* 다크의 "오늘"은 밝은 잉크 면이 아니라 어두운 카드라, 라이트용 sagelt·tan 조합이
-   묻힌다. 테두리는 잉크로, 아이콘은 due 와 같은 밝은 앰버로 되돌린다. */
-:root[data-theme='dark'] .task.urgent .snooze {
-  border-color: var(--ink);
-}
-:root[data-theme='dark'] .task.urgent .snooze svg {
-  stroke: #d6a94f;
-}
-/* 핀도 같은 이유로 되돌린다. 꽂힌 상태(.on)는 앰버 면이라 손대지 않아도 뜬다. */
-:root[data-theme='dark'] .task.urgent .pin {
-  border-color: var(--ink);
-}
-:root[data-theme='dark'] .task.urgent .pin svg {
-  stroke: #d6a94f;
-}
-
-:root[data-theme='dark'] .row.danger {
-  background: #3a2a2a; /* 어두운 웜 레드 틴트. 밝은 블록 대신 위험을 색으로 알린다 */
-}
-:root[data-theme='dark'] .row.danger .rl b {
-  color: var(--ink);
-}
-:root[data-theme='dark'] .row.danger .rl em {
-  color: var(--muted);
-}
-:root[data-theme='dark'] .row.danger svg {
-  stroke: var(--ink);
+  color-scheme: dark;
+  --ink: #e7e3d6;
+  --ink-rgb: 231, 227, 214;
+  --cream: #1c211f;
+  --paper: #272e29;
+  --muted: #b0b5a6;
+  --sage: #a4b899;
+  --sagelt: #333f33;
+  --tan: #d4af73;
+  --line: #74806d;
+  --shadow: #111812;
+  --selected: var(--sage);
+  --on-selected: #202a23;
+  --selected-icon: var(--on-selected);
+  --selected-detail: var(--on-selected);
+  --on-accent: #30271a;
+  --on-sage: #202a23;
+  --focus: var(--tan);
+  --urgent-bg: #34382b;
+  --urgent-ink: var(--ink);
+  --urgent-muted: #c1c4ae;
+  --urgent-line: #b19562;
+  --urgent-border: var(--urgent-line);
+  --urgent-control: var(--urgent-line);
+  --danger-bg: #3b2c29;
+  --danger-ink: #e4b1a0;
+  --danger-muted: #c7b0a5;
+  --danger-line: #946d5d;
 }

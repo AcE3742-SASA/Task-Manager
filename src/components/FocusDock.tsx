@@ -44,6 +44,8 @@ export function FocusDock({ uid }: { uid: string }) {
   const { lang } = useAppSettings()
   const t = useT()
   const [min, setMin] = useState(readMin)
+  const [saving, setSaving] = useState<Set<string>>(() => new Set())
+  const [failedTask, setFailedTask] = useState<string | null>(null)
 
   const now = new Date()
   const today = kstToday(now)
@@ -56,6 +58,23 @@ export function FocusDock({ uid }: { uid: string }) {
   if (picked.length === 0) return null
 
   const done = picked.filter((x) => x.done).length
+
+  async function handleDone(task: Task) {
+    if (saving.has(task.id)) return
+    setSaving((ids) => new Set(ids).add(task.id))
+    setFailedTask(null)
+    try {
+      await toggleDone(uid, task)
+    } catch {
+      setFailedTask(task.title)
+    } finally {
+      setSaving((ids) => {
+        const next = new Set(ids)
+        next.delete(task.id)
+        return next
+      })
+    }
+  }
 
   function toggle() {
     setMin((v) => {
@@ -88,7 +107,9 @@ export function FocusDock({ uid }: { uid: string }) {
                 <div className={`dtask${task.done ? ' done' : ''}`} key={task.id}>
                   <button
                     className="dbox"
-                    onClick={() => toggleDone(uid, task)}
+                    onClick={() => handleDone(task)}
+                    disabled={saving.has(task.id)}
+                    aria-busy={saving.has(task.id)}
                     aria-label={task.done ? t('완료 취소', 'Mark not done') : t('완료', 'Mark done')}
                   >
                     {task.done && <Check />}
@@ -110,6 +131,11 @@ export function FocusDock({ uid }: { uid: string }) {
               )
             })}
           </div>
+        )}
+        {failedTask !== null && (
+          <p className="dock-action-error" role="alert">
+            {t(`‘${failedTask}’ 완료 상태를 저장하지 못했다. 연결을 확인하고 다시 시도해 주세요.`, `Could not save completion for “${failedTask}”. Check your connection and try again.`)}
+          </p>
         )}
       </section>
     </div>

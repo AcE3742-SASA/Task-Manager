@@ -144,9 +144,9 @@
   background: var(--sagelt);
 }
 .nav a.mid {
-  background: var(--ink);
-  color: var(--cream);
-  border-right-color: var(--ink);
+  background: var(--selected);
+  color: var(--on-selected);
+  border-right-color: var(--line);
 }
 
 /* ─── 로그인 ─── */
@@ -186,6 +186,7 @@
 .signin h1 em {
   font-style: normal;
   background: var(--tan);
+  color: var(--on-accent);
   box-shadow: 0 0 0 3px var(--tan);
 }
 .signin p {
@@ -198,6 +199,7 @@
   width: 100%;
   border: var(--b);
   background: var(--tan);
+  color: var(--on-accent);
   box-shadow: var(--sh-s);
   padding: 14px;
   text-align: center;
@@ -210,13 +212,14 @@
 }
 .signin .bigbtn:disabled {
   background: var(--sagelt);
+  color: var(--muted);
   box-shadow: none;
   cursor: progress;
 }
 .signin .bigbtn svg {
   width: 18px;
   height: 18px;
-  stroke: var(--ink);
+  stroke: currentColor;
   fill: none;
   stroke-width: 2.2;
 }
@@ -253,6 +256,7 @@
   margin: var(--gut) var(--gut) 4px;
   border: var(--b);
   background: var(--sage);
+  color: var(--on-sage);
   box-shadow: var(--sh-s);
   padding: 15px;
   display: flex;
@@ -264,6 +268,7 @@
   height: 52px;
   border: var(--b);
   background: var(--cream);
+  color: var(--ink);
   display: grid;
   place-items: center;
   font-size: 22px;
@@ -354,9 +359,10 @@
   font-family: var(--pix);
   font-size: 9px;
   letter-spacing: 0.1em;
-  border: 2px solid var(--ink);
+  border: var(--b2);
   padding: 2px 5px;
   background: var(--tan);
+  color: var(--on-accent);
   flex: none;
 }
 .row.off {
@@ -365,16 +371,17 @@
   border-style: dashed;
 }
 .row.danger {
-  background: var(--ink);
+  background: var(--danger-bg);
+  border-color: var(--danger-line);
 }
 .row.danger .rl b {
-  color: var(--cream);
+  color: var(--danger-ink);
 }
 .row.danger .rl em {
-  color: var(--sagelt);
+  color: var(--danger-muted);
 }
 .row.danger svg {
-  stroke: var(--cream);
+  stroke: var(--danger-ink);
 }
 
 .ttlbl {
@@ -483,10 +490,10 @@
   stroke-linejoin: miter;
 }
 .pickgrid button.on {
-  background: var(--ink);
+  background: var(--selected);
 }
 .pickgrid button.on svg {
-  stroke: var(--tan);
+  stroke: var(--selected-icon);
 }
 .catrow {
   grid-column: 1 / -1;
@@ -527,12 +534,12 @@
   stroke-width: 2.2;
 }
 .chip.on {
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--selected);
+  color: var(--on-selected);
   box-shadow: var(--sh-xs);
 }
 .chip.on svg {
-  stroke: var(--cream);
+  stroke: var(--on-selected);
 }
 .chip.sm {
   font-family: var(--pix);
@@ -571,6 +578,7 @@
   width: 100%;
   border: var(--b);
   background: var(--tan);
+  color: var(--on-accent);
   box-shadow: var(--sh-s);
   padding: 13px;
   text-align: center;
@@ -579,6 +587,7 @@
 }
 .bigbtn:disabled {
   background: var(--sagelt);
+  color: var(--muted);
   box-shadow: none;
 }
 .appbar .act {
@@ -809,45 +818,46 @@
 
 /* 오늘(지난 기한 포함)은 면을 뒤집어 목록에서 먼저 눈에 들어오게 한다. */
 .task.urgent {
-  background: var(--ink);
+  background: var(--urgent-bg);
+  border-color: var(--urgent-border);
 }
 .task.urgent .txt b {
-  color: var(--cream);
+  color: var(--urgent-ink);
 }
 .task.urgent .txt em {
-  color: var(--sagelt);
+  color: var(--urgent-muted);
 }
 .task.urgent .txt em s {
-  border-color: var(--sagelt);
+  border-color: var(--urgent-muted);
 }
 .task.urgent .txt em .repeat-mark {
-  stroke: var(--sagelt);
+  stroke: var(--urgent-muted);
 }
 .task.urgent .due {
   color: var(--tan);
 }
 .task.urgent .due u {
-  color: var(--sagelt);
+  color: var(--urgent-muted);
 }
 .task.urgent .ic {
-  border-color: var(--cream);
+  border-color: var(--urgent-line);
 }
 .task.urgent .ic svg {
-  stroke: var(--cream);
+  stroke: var(--urgent-ink);
 }
 .task.urgent .box {
   background: var(--cream);
-  border-color: var(--cream);
+  border-color: var(--urgent-line);
 }
 .task.urgent .snooze {
-  border-color: var(--sagelt);
+  border-color: var(--urgent-control);
 }
 .task.urgent .snooze svg {
   stroke: var(--tan);
 }
 /* 잉크 카드 위에서는 미루기와 같은 대접. 꽂힌 상태만 채워진 면으로 튀어나온다. */
 .task.urgent .pin {
-  border-color: var(--sagelt);
+  border-color: var(--urgent-control);
 }
 .task.urgent .pin svg {
   stroke: var(--tan);
@@ -857,8 +867,8 @@
   border-color: var(--tan);
 }
 .task.urgent .pin.on svg {
-  stroke: var(--ink);
-  fill: var(--ink);
+  stroke: var(--on-accent);
+  fill: var(--on-accent);
 }
 
 .task.done {
@@ -879,6 +889,30 @@
 }
 .task.done .box {
   background: var(--sage);
+}
+.task.done .box svg {
+  stroke: var(--on-sage);
+}
+
+.task-action-error,
+.dock-action-error {
+  color: var(--danger-ink);
+  background: var(--danger-bg);
+  border: 2px solid var(--danger-line);
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.task-action-error {
+  margin: 0 var(--gut) 9px;
+}
+.dock-action-error {
+  margin: 0 8px 8px;
+}
+.task .box:disabled,
+.dock .dbox:disabled {
+  cursor: progress;
+  border-style: dashed;
 }
 
 .tasks-end {
@@ -928,14 +962,14 @@
   font-family: var(--pix);
   font-size: 10px;
   padding: 4px 8px;
-  border-right: 2px solid var(--ink);
+  border-right: 2px solid var(--line);
 }
 .seg button:last-child {
   border-right: 0;
 }
 .seg button.on {
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--selected);
+  color: var(--on-selected);
 }
 
 /* ─── 시각 선택 (알림). 코드베이스 첫 select 라 .inp 의 규칙을 줄여 옮겼다. ─── */
@@ -971,6 +1005,14 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.calhint {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--pix);
+  font-size: 9px;
+  line-height: 1.4;
+  text-wrap: pretty;
 }
 .calhead {
   display: flex;
@@ -1035,8 +1077,8 @@
   background: var(--sagelt);
 }
 .month .day.on {
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--selected);
+  color: var(--on-selected);
 }
 .dots2 {
   display: flex;
@@ -1051,7 +1093,7 @@
   border: 1px solid var(--ink);
 }
 .month .day.on .dots2 i {
-  border-color: var(--cream);
+  border-color: var(--on-selected);
 }
 .week .d {
   border: var(--b2);
@@ -1074,11 +1116,11 @@
   background: var(--sagelt);
 }
 .week .d.on {
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--selected);
+  color: var(--on-selected);
 }
 .week .d.on .c {
-  color: var(--sagelt);
+  color: var(--selected-detail);
 }
 
 
@@ -1097,23 +1139,23 @@
    outline-offset 이 양수라 링이 요소 "바깥"(크림·페이퍼) 위에 앉는다.
    덕분에 잉크로 채워진 버튼 위에서도 링이 그대로 보인다 — 색을 따로 안 바꿔도 된다. */
 :focus-visible {
-  outline: 3px solid var(--ink);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 /* 탭 바는 칸이 서로 맞닿아 바깥에 링을 그릴 자리가 없다. 안쪽으로 넣는다. */
 .nav a:focus-visible {
   outline-offset: -3px;
 }
-/* 위 전제가 안 통하는 곳이 셋 있다. 링이 크림이 아니라 "잉크 위" 에 앉아 사라지는 자리들.
-   - .task.urgent 는 카드 전체가 잉크라 그 안의 버튼 링이 묻힌다
-   - .nav a.mid 는 링을 안쪽으로 넣는데 그 안쪽이 잉크다
-   탄(tan)은 잉크 위에서 7.33:1 이라 확실히 뜬다. */
+/* 마감 카드 안의 링은 앰버. 새 할 일 탭은 선택 면 안쪽에 링을 그리므로
+   그 면의 글자색을 써야 다크의 밝은 세이지 위에서도 확실하게 구분된다. */
 .task.urgent .hit:focus-visible,
 .task.urgent .box:focus-visible,
 .task.urgent .snooze:focus-visible,
-.task.urgent .pin:focus-visible,
-.nav a.mid:focus-visible {
+.task.urgent .pin:focus-visible {
   outline-color: var(--tan);
+}
+.nav a.mid:focus-visible {
+  outline-color: var(--on-selected);
 }
 
 /* ─── 손가락 타깃 ───
@@ -1326,8 +1368,8 @@
   background: var(--tan);
 }
 .task .pin.on svg {
-  stroke: var(--ink);
-  fill: var(--ink);
+  stroke: var(--on-accent);
+  fill: var(--on-accent);
 }
 
 /* ─── 오늘 끝낼 것 도크 ───
@@ -1356,6 +1398,7 @@
   gap: 8px;
   padding: 9px 10px;
   background: var(--sage);
+  color: var(--on-sage);
   border-bottom: var(--b2);
   width: 100%;
   text-align: left;
@@ -1378,6 +1421,7 @@
   font-size: 10.5px;
   border: var(--b2);
   background: var(--paper);
+  color: var(--ink);
   padding: 1px 6px;
   flex: none;
   font-variant-numeric: tabular-nums;
@@ -1386,7 +1430,7 @@
   width: 18px;
   height: 18px;
   flex: none;
-  stroke: var(--ink);
+  stroke: currentColor;
   fill: none;
   stroke-width: 2.6;
   stroke-linecap: square;
@@ -1413,10 +1457,17 @@
   padding: 6px 7px;
 }
 .dtask.done {
-  opacity: 0.55;
+  border-style: dashed;
 }
 .dtask.done .dhit b {
   text-decoration: line-through;
+  color: var(--muted);
+}
+.dtask.done .dbox {
+  background: var(--sage);
+}
+.dtask.done .dbox svg {
+  stroke: var(--on-sage);
 }
 .dbox {
   width: 24px;

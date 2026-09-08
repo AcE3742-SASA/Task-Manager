@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
 import { TaskRow } from '../components/TaskRow'
-import { dateFromDayNumber, dayNumber, kstDate, kstToday, kstYmd, monthGrid, snoozeDue, weekStrip } from '../lib/due'
+import { dateFromDayNumber, dayNumber, kstDate, kstToday, kstYmd, monthGrid, snoozeDue, toLocalInput, weekStrip } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useAppSettings } from '../lib/settings'
 import { useSubjects } from '../lib/subjects'
@@ -64,6 +64,10 @@ export function Calendar({ uid }: { uid: string }) {
     setPicked(dayNumber(mode === 'month' ? next : weekStrip(p.y, p.m, p.d, weekStartsOn)[0].date))
   }
 
+  function addTaskOn(date: Date) {
+    navigate(`/new?due=${toLocalInput(date).slice(0, 10)}`)
+  }
+
   const title =
     mode === 'month'
       ? `${cur.y}.${String(cur.m + 1).padStart(2, '0')}`
@@ -92,6 +96,9 @@ export function Calendar({ uid }: { uid: string }) {
       }
     >
       <div className="cal">
+        <p className="calhint">
+          {t('날짜를 더블클릭하면 바로 할 일을 추가할 수 있다.', 'Double-click a date to add a task.')}
+        </p>
         <div className="calhead">
           <b>{title}</b>
           <span className="calnav">
@@ -133,6 +140,7 @@ export function Calendar({ uid }: { uid: string }) {
                     `${q.m + 1}/${q.d} · ${items.length} due`,
                   )}
                   onClick={() => setPicked(n)}
+                  onDoubleClick={() => addTaskOn(cell.date)}
                 >
                   {q.d}
                   <span className="dots2">
@@ -171,6 +179,7 @@ export function Calendar({ uid }: { uid: string }) {
                     `${p.m + 1}/${p.d} · ${count} due`,
                   )}
                   onClick={() => setPicked(n)}
+                  onDoubleClick={() => addTaskOn(cell.date)}
                 >
                   <span>{wd[p.day]}</span>
                   <span className="n">{p.d}</span>

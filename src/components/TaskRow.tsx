@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { SubjectIcon } from './subject-icons'
 import { formatDue } from '../lib/due'
 import { useT } from '../lib/i18n'
@@ -15,7 +16,7 @@ type Props = {
   /** 오늘 끝낼 것 목록에 들어 있는가. 들어 있어도 이 행은 제자리에 그대로 남는다. */
   focused: boolean
   onOpen: () => void
-  onToggle: () => void
+  onToggle: () => Promise<void>
   onSnooze: () => void
   onFocus: () => void
 }
@@ -63,10 +64,26 @@ export function TaskRow({
 }: Props) {
   const { lang } = useAppSettings()
   const t = useT()
+  const [saving, setSaving] = useState(false)
+  const [failed, setFailed] = useState(false)
   const due = formatDue(task.due, now, task.done, lang)
   const cls = ['task', task.done && 'done', !task.done && urgent && 'urgent'].filter(Boolean).join(' ')
 
+  async function handleToggle() {
+    if (saving) return
+    setSaving(true)
+    setFailed(false)
+    try {
+      await onToggle()
+    } catch {
+      setFailed(true)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
+    <>
     <div className={cls}>
       <button className="hit" onClick={onOpen}>
         <span className="ic">
@@ -107,11 +124,19 @@ export function TaskRow({
       )}
       <button
         className="box"
-        onClick={onToggle}
+        onClick={handleToggle}
+        disabled={saving}
+        aria-busy={saving}
         aria-label={task.done ? t('완료 취소', 'Mark not done') : t('완료', 'Mark done')}
       >
         {task.done && <Check />}
       </button>
     </div>
+    {failed && (
+      <p className="task-action-error" role="alert">
+        {t('완료 상태를 저장하지 못했다. 연결을 확인하고 다시 시도해 주세요.', 'Could not save completion. Check your connection and try again.')}
+      </p>
+    )}
+    </>
   )
 }

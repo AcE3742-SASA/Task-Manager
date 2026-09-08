@@ -6,6 +6,7 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
   updateDoc,
 } from 'firebase/firestore'
@@ -115,32 +116,41 @@ export function toggleFocus(uid: string, task: Task, today: string) {
 
 export async function toggleDone(uid: string, task: Task) {
   const completing = !task.done
-  // 반복 할일을 완료하면 다음 회차를 새 문서로 띄우고, 이번 건은 반복을 떼어
-  // 평범한 완료 기록으로 남긴다 — 반복을 떼야 다시 눌러도 회차가 겹치지 않는다.
-  if (completing && task.repeat !== 'none' && task.due) {
-    await createTask(
-      uid,
-      {
-        title: task.title,
-        subjectId: task.subjectId,
-        note: task.note,
-        due: nextRepeat(task.due, task.repeat),
-        kind: task.kind,
-        repeat: task.repeat,
-      },
-      // 소급 등록이라 검증 지표에는 넣지 않는다 (직접 등록이 아니다).
-      { dueWasDefault: false, entryMs: 0 },
-    )
-    return updateDoc(doc(col(uid), task.id), {
-      done: true,
-      doneAt: Timestamp.now(),
-      repeat: 'none',
+  const tasks = col(uid)
+  const ref = doc(tasks, task.id)
+  return runTransaction(ref.firestore, async (transaction) => {
+    const snapshot = await transaction.get(ref)
+    if (!snapshot.exists()) throw new Error('할 일을 찾을 수 없다')
+    const current = snapshot.data()
+    // 클릭 당시의 의도를 고정한다. 재시도나 오래된 중복 요청이 완료를 되돌리면 안 된다.
+    if (!!current.done === completing) return
+
+    const due = toDate(current.due)
+    const repeat = (current.repeat ?? 'none') as Repeat
+    const repeating = completing && repeat !== 'none' && due !== null
+    if (repeating) {
+      transaction.set(doc(tasks), {
+        ...clean({
+          title: current.title ?? '',
+          subjectId: current.subjectId ?? null,
+          note: current.note ?? '',
+          due: nextRepeat(due, repeat),
+          kind: current.kind ?? '과제',
+          repeat,
+        }),
+        dueWasDefault: false,
+        entryMs: 0,
+        done: false,
+        doneAt: null,
+        createdAt: serverTimestamp(),
+      })
+    }
+    // 다음 회차 생성과 원본 완료를 함께 커밋한다. 반복을 떼어 재완료도 안전하게 한다.
+    transaction.update(ref, {
+      done: completing,
+      doneAt: completing ? Timestamp.now() : null,
+      ...(repeating ? { repeat: 'none' } : {}),
     })
-  }
-  return updateDoc(doc(col(uid), task.id), {
-    done: !task.done,
-    // 기한 경과 후 완료를 판정하려면 완료 시각이 있어야 한다 (PRD 지표 "놓친 마감").
-    doneAt: task.done ? null : Timestamp.now(),
   })
 }
 
