@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { MouseEvent, PointerEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
 import { TaskRow } from '../components/TaskRow'
@@ -14,6 +15,19 @@ const WD_EN = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
 /** 하루 칸에 점을 몇 개까지 찍을지. 그 이상은 숫자가 아니라 밀도로만 읽힌다. */
 const MAX_DOTS = 4
+const DOUBLE_TAP_MS = 500
+
+type Tap = { day: number; at: number; pointerType: string }
+
+export function isDoubleTap(previous: Tap | null, current: Tap): boolean {
+  const elapsed = previous ? current.at - previous.at : -1
+  return (
+    previous?.day === current.day &&
+    previous.pointerType === current.pointerType &&
+    elapsed >= 0 &&
+    elapsed <= DOUBLE_TAP_MS
+  )
+}
 
 export function Calendar({ uid }: { uid: string }) {
   const { tasks } = useTasks(uid)
@@ -21,6 +35,8 @@ export function Calendar({ uid }: { uid: string }) {
   const { weekStartsOn, lang } = useAppSettings()
   const t = useT()
   const navigate = useNavigate()
+  const lastTap = useRef<Tap | null>(null)
+  const lastPointerType = useRef('')
 
   const [mode, setMode] = useState<'month' | 'week'>('month')
   const today = new Date()
@@ -49,6 +65,7 @@ export function Calendar({ uid }: { uid: string }) {
 
   /** 모드를 바꿔도 고른 날은 그대로 둔다 — 날짜가 아니라 배율만 바꾸는 동작이라서. */
   function zoom(next: 'month' | 'week') {
+    lastTap.current = null
     setMode(next)
     setCursor(dateFromDayNumber(picked))
   }
@@ -66,6 +83,33 @@ export function Calendar({ uid }: { uid: string }) {
 
   function addTaskOn(date: Date) {
     navigate(`/new?due=${toLocalInput(date).slice(0, 10)}`)
+  }
+
+  function dayFrom(target: EventTarget, currentTarget: HTMLDivElement): number | null {
+    const button = (target as Element).closest<HTMLButtonElement>('[data-calendar-day]')
+    return button && currentTarget.contains(button) ? Number(button.dataset.calendarDay) : null
+  }
+
+  function addTaskOnDoubleTap(event: PointerEvent<HTMLDivElement>) {
+    lastPointerType.current = event.pointerType
+    const day = dayFrom(event.target, event.currentTarget)
+    if (event.pointerType === 'mouse' || !event.isPrimary || event.button !== 0 || day == null) {
+      lastTap.current = null
+      return
+    }
+    const current = { day, at: event.timeStamp, pointerType: event.pointerType }
+    if (isDoubleTap(lastTap.current, current)) {
+      lastTap.current = null
+      addTaskOn(dateFromDayNumber(current.day))
+    } else {
+      lastTap.current = current
+    }
+  }
+
+  function addTaskOnDoubleClick(event: MouseEvent<HTMLDivElement>) {
+    if (lastPointerType.current !== 'mouse' || event.button !== 0) return
+    const button = (event.target as Element).closest<HTMLButtonElement>('[data-calendar-day]')
+    if (button && event.currentTarget.contains(button)) addTaskOn(dateFromDayNumber(Number(button.dataset.calendarDay)))
   }
 
   const title =
@@ -95,9 +139,12 @@ export function Calendar({ uid }: { uid: string }) {
         </span>
       }
     >
-      <div className="cal">
+      <div className="cal" onPointerUp={addTaskOnDoubleTap} onDoubleClick={addTaskOnDoubleClick}>
         <p className="calhint">
-          {t('날짜를 더블클릭하면 바로 할 일을 추가할 수 있다.', 'Double-click a date to add a task.')}
+          {t(
+            '날짜를 더블클릭하거나 두 번 탭하면 바로 할 일을 추가할 수 있다.',
+            'Double-click or double-tap a date to add a task.',
+          )}
         </p>
         <div className="calhead">
           <b>{title}</b>
@@ -133,6 +180,7 @@ export function Calendar({ uid }: { uid: string }) {
               return (
                 <button
                   key={n}
+                  data-calendar-day={n}
                   className={cls}
                   aria-pressed={n === picked}
                   aria-label={t(
@@ -140,7 +188,6 @@ export function Calendar({ uid }: { uid: string }) {
                     `${q.m + 1}/${q.d} · ${items.length} due`,
                   )}
                   onClick={() => setPicked(n)}
-                  onDoubleClick={() => addTaskOn(cell.date)}
                 >
                   {q.d}
                   <span className="dots2">
@@ -172,6 +219,7 @@ export function Calendar({ uid }: { uid: string }) {
               return (
                 <button
                   key={n}
+                  data-calendar-day={n}
                   className={cls}
                   aria-pressed={n === picked}
                   aria-label={t(
@@ -179,7 +227,6 @@ export function Calendar({ uid }: { uid: string }) {
                     `${p.m + 1}/${p.d} · ${count} due`,
                   )}
                   onClick={() => setPicked(n)}
-                  onDoubleClick={() => addTaskOn(cell.date)}
                 >
                   <span>{wd[p.day]}</span>
                   <span className="n">{p.d}</span>
