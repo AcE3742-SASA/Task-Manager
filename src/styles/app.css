@@ -706,6 +706,11 @@ button.grp .chev.shut {
 button.grp[aria-expanded='false'] h2 {
   opacity: 0.62;
 }
+/* 여러 그룹을 한꺼번에 접으면 제목 줄만 쌓인다 — 그때는 간격을 좁혀 목록처럼 읽힌다. */
+button.grp[aria-expanded='false'] {
+  padding-top: 10px;
+  padding-bottom: 6px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   button.grp .chev {
