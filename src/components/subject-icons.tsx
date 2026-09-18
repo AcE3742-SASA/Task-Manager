@@ -93,7 +93,7 @@ export function iconName(id: string, lang: 'ko' | 'en'): string {
 }
 
 /** 모르는 id 는 "기타" 로 떨어뜨린다 — 아이콘 하나 때문에 화면이 깨지지 않게. */
-export function SubjectIcon({ id }: { id: string }) {
+export function SubjectIcon({ id, color }: { id: string; color?: string }) {
   const icon = BY_ID.get(id) ?? SUBJECT_ICONS[SUBJECT_ICONS.length - 1]
-  return <svg viewBox="0 0 24 24">{icon.d}</svg>
+  return <svg viewBox="0 0 24 24" style={color ? { stroke: color } : undefined}>{icon.d}</svg>
 }

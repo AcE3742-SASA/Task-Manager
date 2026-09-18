@@ -6,6 +6,8 @@ import { useAppSettings } from '../lib/settings'
 import { useSubjects } from '../lib/subjects'
 import { toggleDone, toggleFocus, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
+import { LiquidSurface } from './LiquidSurface'
+import { SubjectBadge } from './SubjectBadge'
 
 const KEY = 'focusdock.min'
 
@@ -90,6 +92,7 @@ export function FocusDock({ uid }: { uid: string }) {
   return (
     <div className="dockslot">
       <section className="dock" aria-label={t('오늘 끝낼 것', 'Today’s list')}>
+        <LiquidSurface />
         <button className="dockbar" onClick={toggle} aria-expanded={!min}>
           <b>{t('오늘 끝낼 것', 'Finish today')}</b>
           <span className="dockcount">
@@ -117,7 +120,8 @@ export function FocusDock({ uid }: { uid: string }) {
                   <button className="dhit" onClick={() => navigate(`/task/${task.id}`)}>
                     <b>{task.title}</b>
                     <em>
-                      {subject?.name ?? t('과목 없음', 'No subject')} · {due.main}
+                      <SubjectBadge icon={subject?.icon ?? 'dots'} color={subject?.color} />
+                      <span>{subject?.name ?? t('과목 없음', 'No subject')} · {due.main}</span>
                     </em>
                   </button>
                   <button

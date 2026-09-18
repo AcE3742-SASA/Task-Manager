@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Screen } from '../components/Screen'
+import { LiquidInput } from '../components/LiquidInput'
+import { LiquidSurface } from '../components/LiquidSurface'
 import { CATEGORY_EN, ICON_CATEGORIES, SUBJECT_ICONS, iconName } from '../components/subject-icons'
 import { useT } from '../lib/i18n'
 import { useAppSettings } from '../lib/settings'
@@ -110,7 +112,7 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
 
         <div className="field">
           <span className="lbl">{t('과목 이름', 'Subject name')}</span>
-          <input
+          <LiquidInput
             className="inp"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -123,7 +125,7 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
           <span className="lbl">
             {t(`줄임말 — 최대 ${SHORT_MAX}글자`, `Short name — ${SHORT_MAX} chars max`)}
           </span>
-          <input
+          <LiquidInput
             className="inp pix"
             value={short}
             maxLength={SHORT_MAX}
@@ -148,7 +150,7 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
           </span>
           <div className="pickgrid">
             {ICON_CATEGORIES.map((cat) => (
-              <Fragmentish key={cat} cat={cat} icon={icon} onPick={setIcon} lang={lang} />
+              <Fragmentish key={cat} cat={cat} icon={icon} color={color} onPick={setIcon} lang={lang} />
             ))}
           </div>
         </div>
@@ -208,11 +210,13 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
 function Fragmentish({
   cat,
   icon,
+  color,
   onPick,
   lang,
 }: {
   cat: IconCategory
   icon: string
+  color: string
   onPick: (id: string) => void
   lang: Lang
 }) {
@@ -223,12 +227,14 @@ function Fragmentish({
         <button
           key={i.id}
           className={i.id === icon ? 'on' : ''}
+          style={i.id === icon ? { background: color } : undefined}
           title={lang === 'en' ? i.en : i.name}
           aria-label={lang === 'en' ? i.en : i.name}
           aria-pressed={i.id === icon}
           onClick={() => onPick(i.id)}
         >
-          <svg viewBox="0 0 24 24">{i.d}</svg>
+          {i.id !== icon && <LiquidSurface />}
+          <svg viewBox="0 0 24 24" style={i.id === icon ? { stroke: onColor(color) } : undefined}>{i.d}</svg>
         </button>
       ))}
     </>

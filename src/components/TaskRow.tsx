@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { SubjectIcon } from './subject-icons'
+import { SubjectBadge } from './SubjectBadge'
 import { formatDue } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useAppSettings } from '../lib/settings'
+import { LiquidSurface } from './LiquidSurface'
 import { KIND_EN } from '../lib/tasks'
 import type { Subject } from '../lib/subjects'
 import type { Task } from '../lib/tasks'
@@ -85,10 +86,9 @@ export function TaskRow({
   return (
     <>
     <div className={cls}>
+      {!task.done && <LiquidSurface />}
       <button className="hit" onClick={onOpen}>
-        <span className="ic">
-          <SubjectIcon id={subject?.icon ?? 'dots'} />
-        </span>
+        <SubjectBadge className="ic" icon={subject?.icon ?? 'dots'} color={subject?.color} />
         <span className="txt">
           <b>{task.title}</b>
           <em>

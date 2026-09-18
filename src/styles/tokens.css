@@ -1,6 +1,6 @@
 /* 라이트는 design/mockup-v1.html의 세이지·크림 팔레트.
    글자, 윤곽선, 그림자, 선택 면은 역할별로 분리해 다크에서도 대비를 지킨다. */
-:root {
+:where(:root, [data-theme-preview]) {
   color-scheme: light;
   --ink: #34170d;
   --ink-rgb: 52, 23, 13;
@@ -16,6 +16,8 @@
   --shadow: var(--ink);
   --selected: var(--ink);
   --on-selected: var(--cream);
+  --nav-add: var(--selected);
+  --on-nav-add: var(--on-selected);
   --selected-icon: var(--tan);
   --selected-detail: var(--sagelt);
   --on-accent: var(--ink);
@@ -43,12 +45,26 @@
   --tap: 44px;
   --bar: 60px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --surface: var(--paper);
+  --accent: var(--tan);
+  --on-primary: var(--on-accent);
+  --urgent-accent: var(--tan);
+  --on-urgent-accent: var(--on-accent);
+  --radius: 0px;
+  --radius-control: 0px;
+  --body-weight: 400;
+  --title-weight: 400;
+  --title-size: 25px;
+  --task-size: 14.5px;
+  --number-weight: 400;
+  --number-size: 10.5px;
+  --scene: none;
 }
 
 /* 밤의 종이·이끼·황동. 굵은 윤곽과 단단한 그림자는 유지하되,
    글자처럼 밝게 빛나던 선을 걷고 면마다 깊이를 준다.
    과목에 저장된 사용자 색은 이 팔레트와 별개로 그대로 표시한다. */
-:root[data-theme='dark'] {
+:where(:root[data-theme='dark'], :root[data-theme='dark'] [data-theme-preview]) {
   color-scheme: dark;
   --ink: #e7e3d6;
   --ink-rgb: 231, 227, 214;
@@ -77,4 +93,191 @@
   --danger-ink: #e4b1a0;
   --danger-muted: #c7b0a5;
   --danger-line: #946d5d;
+}
+
+/* 똑같은 토큰을 실제 화면과 설정의 작은 미리보기에서 함께 사용한다. */
+:where([data-theme-style='neumorphism'], [data-theme-style='neo-brutalism'], [data-theme-style='glassmorphism']) {
+  --sage: var(--selected);
+  --sagelt: var(--surface);
+  --tan: var(--accent);
+  --selected-icon: var(--on-selected);
+  --selected-detail: var(--on-selected);
+  --on-sage: var(--on-selected);
+  --on-accent: var(--on-primary);
+  --nav-add: var(--accent);
+  --on-nav-add: var(--on-primary);
+  --urgent-muted: var(--urgent-ink);
+  --urgent-accent: var(--urgent-ink);
+  --on-urgent-accent: var(--urgent-bg);
+  --urgent-line: var(--urgent-ink);
+  --urgent-border: var(--urgent-ink);
+  --urgent-control: var(--urgent-ink);
+  --focus: var(--selected);
+  --danger-bg: #fbe5e5;
+  --danger-ink: #9e3039;
+  --danger-muted: var(--danger-ink);
+  --danger-line: var(--danger-ink);
+  --radius: 18px;
+  --radius-control: 8px;
+  --number-size: 11px;
+}
+
+:where(:root[data-theme='dark'][data-theme-style]:not([data-theme-style='classic']), :root[data-theme='dark'] [data-theme-preview]:not([data-theme-style='classic'])) {
+  --danger-bg: #432a31;
+  --danger-ink: #ffbbc2;
+}
+
+:where([data-theme-style='neumorphism']) {
+  --cream: #e8edf2;
+  --paper: #e8edf2;
+  --ink: #263544;
+  --ink-rgb: 38, 53, 68;
+  --muted: #596b7c;
+  --selected: #285c83;
+  --on-selected: #ffffff;
+  --nav-add: #cfdce8;
+  --on-nav-add: #28445c;
+  --accent: var(--selected);
+  --on-primary: var(--on-selected);
+  --urgent-bg: #f2e4d5;
+  --urgent-ink: #814a1d;
+  --line: #758596;
+  --shadow: #c2cad3;
+  --highlight: #ffffff;
+  --b: 1px solid var(--line);
+  --b2: 1px solid var(--line);
+  --sh: 6px 6px 12px var(--shadow), -6px -6px 12px var(--highlight);
+  --sh-s: var(--sh);
+  --sh-xs: var(--sh);
+  --sh-inset: inset 3px 3px 6px var(--shadow), inset -3px -3px 6px var(--highlight);
+  --disp: 'LINE Seed KR', sans-serif;
+  --pix: var(--disp);
+  --title-weight: 700;
+}
+:where(:root[data-theme='dark'][data-theme-style='neumorphism'], :root[data-theme='dark'] [data-theme-style='neumorphism']) {
+  --cream: #293340;
+  --paper: #293340;
+  --ink: #edf2f7;
+  --ink-rgb: 237, 242, 247;
+  --muted: #b1becc;
+  --selected: #9bc9e8;
+  --on-selected: #183248;
+  --nav-add: #3b4e63;
+  --on-nav-add: #dceaf5;
+  --urgent-bg: #40382f;
+  --urgent-ink: #f0c68e;
+  --line: #8595a5;
+  --shadow: #1b222c;
+  --highlight: #384555;
+}
+
+:where([data-theme-style='neo-brutalism']) {
+  --cream: #f3f0e6;
+  --paper: #fffef9;
+  --ink: #171717;
+  --ink-rgb: 23, 23, 23;
+  --muted: #5d5951;
+  --accent: #ffd43b;
+  --on-primary: #171717;
+  --selected: #2447e0;
+  --on-selected: #ffffff;
+  --urgent-bg: #ffe3d6;
+  --urgent-ink: #862c15;
+  --line: #171717;
+  --shadow: #171717;
+  --b: 3px solid var(--line);
+  --b2: 2px solid var(--line);
+  --sh: 4px 4px 0 var(--shadow);
+  --sh-s: var(--sh);
+  --sh-xs: var(--sh);
+  --radius: 0px;
+  --radius-control: 0px;
+  --disp: 'Space Grotesk', 'Gmarket Sans', sans-serif;
+  --pix: var(--disp);
+  --body-weight: 500;
+  --title-weight: 700;
+  --title-size: 24px;
+  --task-size: 14px;
+  --number-weight: 600;
+}
+:where(:root[data-theme='dark'][data-theme-style='neo-brutalism'], :root[data-theme='dark'] [data-theme-style='neo-brutalism']) {
+  --cream: #202126;
+  --paper: #303239;
+  --ink: #f8f5ec;
+  --ink-rgb: 248, 245, 236;
+  --muted: #c1bfb6;
+  --selected: #adc0ff;
+  --on-selected: #18214f;
+  --urgent-bg: #433129;
+  --urgent-ink: #ffd2b8;
+  --line: #f8f5ec;
+  --shadow: #08090b;
+}
+
+:where([data-theme-style='glassmorphism']) {
+  --cream: #eaf3f8;
+  --paper: #eaf3f8;
+  --surface: rgb(255 255 255 / 8%);
+  --glass-overlay: rgb(255 255 255 / 78%);
+  --surface-solid: #ffffff;
+  --glass-control: rgb(255 255 255 / 10%);
+  --ink: #142c3b;
+  --ink-rgb: 20, 44, 59;
+  --muted: #355464;
+  --selected: #0b6871;
+  --on-selected: #ffffff;
+  --nav-add: #3456c5;
+  --on-nav-add: #ffffff;
+  --accent: var(--selected);
+  --on-primary: var(--on-selected);
+  --urgent-bg: rgb(255 240 218 / 32%);
+  --urgent-solid: #fff0da;
+  --urgent-ink: #714113;
+  --line: #5b7788;
+  --glass-edge: rgb(255 255 255 / 34%);
+  --glass-rim: rgb(255 255 255 / 72%);
+  --glass-gloss: linear-gradient(155deg, rgb(255 255 255 / 9%), transparent 34%, transparent 76%, rgb(255 255 255 / 3%));
+  --shadow: rgb(20 44 59 / 10%);
+  --b: 1px solid var(--line);
+  --b2: 1px solid var(--line);
+  --sh: 0 8px 18px var(--shadow), inset 0 1px 0 var(--glass-rim), inset 0 -1px 0 rgb(20 44 59 / 12%);
+  --sh-s: var(--sh);
+  --sh-xs: 0 4px 12px var(--shadow), inset 0 1px 0 var(--glass-rim), inset 0 -1px 0 rgb(20 44 59 / 12%);
+  --scene: radial-gradient(ellipse 90% 72% at -14% 14%, #9edfd3 18%, #cfede6 59%, rgb(255 255 255 / 90%) 59.4%, rgb(255 255 255 / 30%) 61%, transparent 62%), radial-gradient(ellipse 88% 72% at 115% 76%, #abc5f1 28%, #cbdcfa 58%, rgb(255 255 255 / 86%) 58.5%, rgb(255 255 255 / 18%) 60%, transparent 61%), linear-gradient(140deg, #eaf3f8 20%, #cfede6 52%, #cbdcfa 100%);
+  --disp: 'Manrope', 'SUIT', sans-serif;
+  --pix: var(--disp);
+  --body-weight: 500;
+  --title-weight: 600;
+  --number-weight: 600;
+}
+:where(:root[data-theme='dark'][data-theme-style='glassmorphism'], :root[data-theme='dark'] [data-theme-style='glassmorphism']) {
+  --cream: #101f2c;
+  --paper: #101f2c;
+  --surface: rgb(14 31 47 / 12%);
+  --glass-overlay: rgb(23 43 61 / 84%);
+  --surface-solid: #172b3d;
+  --glass-control: rgb(255 255 255 / 4%);
+  --ink: #e6f3fa;
+  --ink-rgb: 230, 243, 250;
+  --muted: #bad1dd;
+  --selected: #91e1d8;
+  --on-selected: #113a3a;
+  --nav-add: #7696f2;
+  --on-nav-add: #0c1c42;
+  --urgent-bg: rgb(90 61 27 / 38%);
+  --urgent-solid: #3c3326;
+  --urgent-ink: #f6d8ad;
+  --line: #6f91a5;
+  --glass-edge: rgb(220 249 255 / 16%);
+  --glass-rim: rgb(220 249 255 / 42%);
+  --glass-gloss: linear-gradient(155deg, rgb(210 244 255 / 6%), transparent 34%, transparent 76%, rgb(210 244 255 / 2%));
+  --shadow: rgb(0 0 0 / 20%);
+  --scene: radial-gradient(ellipse 90% 72% at -14% 14%, #20575c 18%, #173b3f 59%, rgb(145 225 216 / 20%) 59.4%, rgb(145 225 216 / 4%) 61%, transparent 62%), radial-gradient(ellipse 88% 72% at 115% 76%, #304877 28%, #1c3158 58%, rgb(173 192 255 / 20%) 58.5%, rgb(173 192 255 / 3%) 60%, transparent 61%), linear-gradient(140deg, #101f2c 20%, #173b3f 52%, #1c3158 100%);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :where([data-theme-style='glassmorphism']) { --surface: var(--surface-solid); --glass-overlay: var(--surface-solid); --glass-control: var(--surface-solid); --urgent-bg: var(--urgent-solid); --glass-gloss: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :where([data-theme-style='glassmorphism']) { --surface: var(--surface-solid); --glass-overlay: var(--surface-solid); --glass-control: var(--surface-solid); --urgent-bg: var(--urgent-solid); --glass-gloss: none; --scene: none; }
 }

@@ -142,8 +142,8 @@ export function Calendar({ uid }: { uid: string }) {
       <div className="cal" onPointerUp={addTaskOnDoubleTap} onDoubleClick={addTaskOnDoubleClick}>
         <p className="calhint">
           {t(
-            '날짜를 더블클릭하거나 두 번 탭하면 바로 할 일을 추가할 수 있다.',
-            'Double-click or double-tap a date to add a task.',
+            '날짜를 빠르게 두 번 누르면 할 일을 추가할 수 있어요.',
+            'Press a date twice quickly to add a task.',
           )}
         </p>
         <div className="calhead">
@@ -165,13 +165,12 @@ export function Calendar({ uid }: { uid: string }) {
                 {d}
               </span>
             ))}
-            {days.map((cell) => {
+            {days.filter((cell) => !cell.out).map((cell) => {
               const n = dayNumber(cell.date)
               const q = kstYmd(cell.date)
               const items = perDay.get(n) ?? []
               const cls = [
                 'day',
-                cell.out && 'out',
                 n === dayNumber(today) && 'today',
                 n === picked && 'on',
               ]
@@ -182,6 +181,7 @@ export function Calendar({ uid }: { uid: string }) {
                   key={n}
                   data-calendar-day={n}
                   className={cls}
+                  style={q.d === 1 ? { gridColumn: ((q.day - weekStartsOn + 7) % 7) + 1 } : undefined}
                   aria-pressed={n === picked}
                   aria-label={t(
                     `${q.m + 1}월 ${q.d}일 · 마감 ${items.length}건`,

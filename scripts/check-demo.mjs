@@ -1,0 +1,57 @@
+// Start npm run preview:demo first. Uses a fresh browser profile and only local example data.
+import assert from 'node:assert/strict'
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
+const base = process.env.DEMO_URL || 'http://127.0.0.1:4183'
+const browser = await chromium.launch({ channel: 'chrome', headless: true })
+const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
+const errors = [], external = []
+page.on('pageerror', error => errors.push(error.message))
+await page.route('**/*', route => {
+  const url = route.request().url()
+  if (url.startsWith(base + '/')) return route.continue()
+  external.push(url)
+  return route.abort()
+})
+try {
+  await page.goto(base)
+  await page.waitForSelector('.task')
+  assert.equal(await page.locator('.task').count(), 5)
+  assert.equal(await page.locator('.signin').count(), 0)
+  assert.match(await page.title(), /\[DEV\]/)
+  await page.locator('.nav a[href="/settings"]').click()
+  await page.locator('.dockbar').click()
+  for (const style of ['classic', 'neumorphism', 'neo-brutalism', 'glassmorphism']) {
+    await page.locator(`label:has(input[value="${style}"])`).click()
+    await page.waitForFunction(value => document.documentElement.dataset.themeStyle === value, style)
+  }
+  await page.locator('label:has(input[value="dark"])').click()
+  await page.reload()
+  await page.waitForFunction(() => document.documentElement.dataset.themeStyle === 'glassmorphism' && document.documentElement.dataset.theme === 'dark')
+  await page.locator('.nav a[href="/new"]').click()
+  await page.locator('input.inp').first().fill('개발 빌드 CRUD 검증')
+  await page.locator('.bigbtn').click()
+  await page.waitForURL(base + '/')
+  const task = page.locator('.task').filter({ hasText: '개발 빌드 CRUD 검증' })
+  await task.locator('.box').click()
+  await page.waitForFunction(() => [...document.querySelectorAll('.task.done')].some(e => e.textContent.includes('개발 빌드 CRUD 검증')))
+  await page.reload()
+  await task.waitFor()
+  assert.match(await task.getAttribute('class'), /done/)
+  await task.locator('.hit').click()
+  await page.locator('input.inp').first().fill('개발 빌드 수정 검증')
+  await page.locator('.bigbtn').click()
+  const updated = page.locator('.task').filter({ hasText: '개발 빌드 수정 검증' })
+  await updated.locator('.hit').click()
+  page.once('dialog', dialog => dialog.accept())
+  await page.locator('.form .row.danger').click()
+  await page.waitForURL(base + '/')
+  assert.equal(await page.locator('.task').count(), 5)
+  await page.locator('.nav a[href="/calendar"]').click()
+  await page.waitForSelector('.month')
+  assert.equal(await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length), 0)
+  assert.deepEqual(errors, [])
+  assert.deepEqual(external, [], 'demo must never request Firebase or Google')
+  console.log('PASS: no-login entry, four themes, reload persistence, task create/complete/edit/delete, calendar, no external requests or service worker')
+} finally {
+  await browser.close()
+}

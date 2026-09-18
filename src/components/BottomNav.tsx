@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { IconCalendar, IconGear, IconList, IconPerson, IconPlus } from './icons'
+import { LiquidSurface } from './LiquidSurface'
 
 const TABS = [
   { to: '/', label: 'LIST', Icon: IconList, end: true, mid: false },
@@ -12,6 +13,7 @@ const TABS = [
 export function BottomNav() {
   return (
     <nav className="nav">
+      <LiquidSurface />
       {TABS.map(({ to, label, Icon, end, mid }) => (
         <NavLink
           key={to}

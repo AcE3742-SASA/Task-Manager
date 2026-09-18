@@ -12,6 +12,8 @@ import {
   unsubscribeThisDevice,
 } from '../lib/push'
 import { APP_VERSION } from '../lib/version'
+import { AppearanceSettings } from '../components/AppearanceSettings'
+import { LiquidSurface } from '../components/LiquidSurface'
 
 const GITHUB = 'https://github.com/AcE3742-SASA'
 
@@ -81,6 +83,7 @@ function ToggleRow<T extends string | number>({
         }
       }}
     >
+      <LiquidSurface />
       <SubjectIcon id={icon} />
       <span className="rl">
         <b>{title}</b>
@@ -142,6 +145,7 @@ function SelectRow({
         }
       }}
     >
+      <LiquidSurface />
       <SubjectIcon id={icon} />
       <span className="rl">
         <b>{title}</b>
@@ -205,7 +209,7 @@ function useThisDevice(uid: string) {
 
 export function Settings({ uid }: { uid: string }) {
   const t = useT()
-  const { weekStartsOn, lang, notify, theme } = useAppSettings()
+  const { weekStartsOn, lang, notify } = useAppSettings()
   const dev = useThisDevice(uid)
 
   return (
@@ -226,6 +230,7 @@ export function Settings({ uid }: { uid: string }) {
             }
           }}
         >
+          <LiquidSurface />
           <SubjectIcon id="bell" />
           <span className="rl">
             <b>{t('이 기기로 알림 받기', 'Notify this device')}</b>
@@ -328,20 +333,10 @@ export function Settings({ uid }: { uid: string }) {
           onPick={(v) => saveSettings(uid, { lang: v })}
         />
 
-        <ToggleRow
-          icon="palette"
-          title={t('화면 모드', 'Appearance')}
-          desc={t('밝게·어둡게·기기 설정', 'Light, dark, or your device')}
-          value={theme}
-          options={[
-            { v: 'system' as const, label: t('자동', 'Auto') },
-            { v: 'light' as const, label: t('밝게', 'Light') },
-            { v: 'dark' as const, label: t('어둡게', 'Dark') },
-          ]}
-          onPick={(v) => saveSettings(uid, { theme: v })}
-        />
+        <AppearanceSettings uid={uid} />
 
         <div className="row">
+          <LiquidSurface />
           <SubjectIcon id="report" />
           <span className="rl">
             <b>{t('버전 정보', 'Version')}</b>
@@ -350,6 +345,7 @@ export function Settings({ uid }: { uid: string }) {
         </div>
 
         <a className="row" href={GITHUB} target="_blank" rel="noreferrer">
+          <LiquidSurface />
           <SubjectIcon id="code" />
           <span className="rl">
             <b>{t('개발자 · GitHub', 'Developer · GitHub')}</b>
