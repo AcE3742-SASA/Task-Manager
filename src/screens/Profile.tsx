@@ -5,6 +5,7 @@ import { Screen } from '../components/Screen'
 import { Link } from 'react-router-dom'
 import { IconArrow, IconCalendar, IconList, IconSignOut } from '../components/icons'
 import { SubjectIcon } from '../components/subject-icons'
+import { LiquidSurface } from '../components/LiquidSurface'
 import { auth } from '../lib/firebase'
 import { useT } from '../lib/i18n'
 import { NeedsFreshLogin, deleteAccount, wipeSemester } from '../lib/wipe'
@@ -108,6 +109,7 @@ export function Profile({ user }: { user: User }) {
   return (
     <Screen title={t('프로필', 'Profile')}>
       <div className="acct">
+        <LiquidSurface />
         <span className="av">
           {user.photoURL ? <img src={user.photoURL} alt="" /> : name.slice(0, 1)}
         </span>
@@ -120,6 +122,7 @@ export function Profile({ user }: { user: User }) {
       <span className="ttlbl">{t('시간표', 'TIMETABLE')}</span>
       <div className="rows">
         <Link className="row" to="/timetable">
+          <LiquidSurface />
           <IconCalendar />
           <span className="rl">
             <b>{t('시간표', 'Timetable')}</b>
@@ -129,6 +132,7 @@ export function Profile({ user }: { user: User }) {
         </Link>
 
         <Link className="row" to="/subjects">
+          <LiquidSurface />
           <IconList />
           <span className="rl">
             <b>{t('과목', 'Subjects')}</b>
@@ -138,6 +142,7 @@ export function Profile({ user }: { user: User }) {
         </Link>
 
         <button className="row" onClick={reset} disabled={busy}>
+          <LiquidSurface />
           <SubjectIcon id="flag" />
           <span className="rl">
             <b>{t('새 학기 시작', 'Start a new semester')}</b>
@@ -164,6 +169,7 @@ export function Profile({ user }: { user: User }) {
       <span className="ttlbl">{t('계정 이전', 'MOVE ACCOUNT')}</span>
       <div className="rows">
         <button className="row" onClick={exportData} disabled={busy}>
+          <LiquidSurface />
           <SubjectIcon id="folder" />
           <span className="rl">
             <b>{t('데이터 내보내기', 'Export data')}</b>
@@ -172,6 +178,7 @@ export function Profile({ user }: { user: User }) {
         </button>
 
         <button className="row" onClick={() => filePick.current?.click()} disabled={busy}>
+          <LiquidSurface />
           <SubjectIcon id="report" />
           <span className="rl">
             <b>{t('데이터 가져오기', 'Import data')}</b>

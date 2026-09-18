@@ -2,9 +2,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
 import { EmptyState } from '../components/EmptyState'
 import { IconArrow, IconPlus } from '../components/icons'
-import { SubjectIcon } from '../components/subject-icons'
+import { SubjectBadge } from '../components/SubjectBadge'
+import { LiquidSurface } from '../components/LiquidSurface'
 import { useT } from '../lib/i18n'
-import { useSubjects } from '../lib/subjects'
+import { onColor, useSubjects } from '../lib/subjects'
 
 export function Subjects({ uid }: { uid: string }) {
   const { subjects, loading, error } = useSubjects(uid)
@@ -15,6 +16,7 @@ export function Subjects({ uid }: { uid: string }) {
 
   const addRow = (
     <Link className="row" to="/subjects/new">
+      <LiquidSurface />
       <IconPlus />
       <span className="rl">
         <b>{t('새 과목', 'New subject')}</b>
@@ -61,7 +63,8 @@ export function Subjects({ uid }: { uid: string }) {
 
         {subjects.map((s) => (
           <Link className="row" key={s.id} to={`/subjects/${s.id}`}>
-            <SubjectIcon id={s.icon} />
+            <LiquidSurface />
+            <SubjectBadge icon={s.icon} color={s.color} />
             <span className="rl">
               <b>{s.name}</b>
               <em>
@@ -69,7 +72,7 @@ export function Subjects({ uid }: { uid: string }) {
                 {s.slots?.[0]?.teacher ? ` · ${s.slots[0].teacher}` : ''}
               </em>
             </span>
-            <span className="tag" style={{ background: s.color }}>
+            <span className="tag" style={{ background: s.color, color: onColor(s.color) }}>
               {s.short}
             </span>
             <IconArrow />

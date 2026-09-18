@@ -1,0 +1,190 @@
+@font-face {
+  font-family: 'LINE Seed KR'; src: url('/fonts/line-seed-kr-regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'LINE Seed KR'; src: url('/fonts/line-seed-kr-bold.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Gmarket Sans'; src: url('/fonts/gmarket-sans-medium.woff') format('woff');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Gmarket Sans'; src: url('/fonts/gmarket-sans-bold.woff') format('woff');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk'; src: url('/fonts/space-grotesk-latin.woff2') format('woff2');
+  font-weight: 500 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'SUIT'; src: url('/fonts/suit-regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'SUIT'; src: url('/fonts/suit-medium.woff2') format('woff2');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'SUIT'; src: url('/fonts/suit-semibold.woff2') format('woff2');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Manrope'; src: url('/fonts/manrope-latin.woff2') format('woff2');
+  font-weight: 400 700; font-style: normal; font-display: swap;
+}
+
+/* 배치·너비·간격은 app.css가 소유한다. 새 테마는 표면과 글꼴만 바꾼다. */
+:root[data-theme-style]:not([data-theme-style='classic']) {
+  font-synthesis: none;
+  scrollbar-color: var(--muted) var(--cream);
+}
+:root[data-theme-style]:not([data-theme-style='classic']) body { font-weight: var(--body-weight); }
+:root[data-theme-style]:not([data-theme-style='classic']) ::selection { background: var(--selected); color: var(--on-selected); }
+:root[data-theme-style]:not([data-theme-style='classic']) :is(input, textarea) { caret-color: var(--selected); }
+:root[data-theme-style]:not([data-theme-style='classic']) :is(.appbar h1, .signin h1) {
+  font-size: var(--title-size); font-weight: var(--title-weight);
+}
+:root[data-theme-style]:not([data-theme-style='classic']) :is(.grp h2, .calhead b, .acct b, .row .rl b, .dockbar b, .empty b) {
+  font-weight: var(--title-weight);
+}
+:root[data-theme-style]:not([data-theme-style='classic']) .task .txt b { font-size: var(--task-size); font-weight: var(--body-weight); }
+:root[data-theme-style]:not([data-theme-style='classic']) :is(.task .due, .appbar .aside, .grp .cnt, .dockcount) {
+  font-size: var(--number-size); font-weight: var(--number-weight); letter-spacing: 0;
+}
+:root[data-theme-style]:not([data-theme-style='classic']) :is(.txt em, .row .rl em, .hint, .calhint, .rows-note, .appearance-status) {
+  font-weight: 400;
+}
+:root[data-theme-style]:not([data-theme-style='classic']) :is(.task, .row, .acct, .dock, .signin .card, .empty .mark) { border-radius: var(--radius); }
+:root[data-theme-style]:not([data-theme-style='classic']) :is(.inp, .hourpick, .bigbtn, .chip, .pickgrid button, .calhead .step, .day, .week .d, .dtask, .hint, .seg, .task .ic, .task .box, .task .pin, .task .snooze, .dbox, .dx) {
+  border-radius: var(--radius-control);
+}
+:root[data-theme-style]:not([data-theme-style='classic']) .seg { overflow: hidden; }
+:root[data-theme-style]:not([data-theme-style='classic']) .nav a.on { background: var(--selected); color: var(--on-selected); }
+:root[data-theme-style]:not([data-theme-style='classic']) .nav a.mid { background: var(--nav-add); color: var(--on-nav-add); }
+:root[data-theme-style]:not([data-theme-style='classic']) .nav a.mid:focus-visible { outline-color: var(--on-nav-add); }
+:root[data-theme-style]:not([data-theme-style='classic']) :is(.month .day.today:not(.on), .week .d.today:not(.on)) {
+  background: var(--surface); border-color: var(--selected); box-shadow: inset 0 0 0 1px var(--selected);
+}
+:root[data-theme-style]:not([data-theme-style='classic']) :is(.month .day.on, .week .d.on) {
+  background: var(--selected); border-color: var(--selected); color: var(--on-selected);
+}
+:root[data-theme-style]:not([data-theme-style='classic']) .dockbar { background: var(--selected); color: var(--on-selected); }
+:root[data-theme-style]:not([data-theme-style='classic']) .dtask { background: var(--surface); }
+:root[data-theme-style]:not([data-theme-style='classic']) .task.urgent :focus-visible { outline-color: var(--urgent-ink); }
+:root[data-theme-style]:not([data-theme-style='classic']) .task .pin.on {
+  background: var(--selected); border-color: var(--selected);
+}
+:root[data-theme-style]:not([data-theme-style='classic']) .task .pin.on svg {
+  stroke: var(--on-selected); fill: var(--on-selected);
+}
+
+/* Neumorphism: 같은 색 표면. 작은 조작부에는 식별할 수 있는 윤곽을 남긴다. */
+:root[data-theme-style='neumorphism'] #root { background-image: none; }
+:root[data-theme-style='neumorphism'] :is(.task:not(.urgent):not(.done), .row:not(.danger), .acct, .signin .card, .dock) { border-color: transparent; }
+:root[data-theme-style='neumorphism'] :is(.inp, .hourpick) { box-shadow: var(--sh-inset); }
+:root[data-theme-style='neumorphism'] :is(.task .ic, .empty .mark) { box-shadow: 3px 3px 6px var(--shadow), -3px -3px 6px var(--highlight); }
+:root[data-theme-style='neumorphism'] :is(.bigbtn, .row:not(.off), .calhead .step, .chip.on, .swatch.on):active,
+:root[data-theme-style='neumorphism'] .task:not(.done):has(.hit:active) {
+  transform: none; box-shadow: var(--sh-inset);
+}
+/* 색 버튼의 눌림은 안쪽 윤곽으로 표시한다. */
+:root[data-theme-style='neumorphism'] .bigbtn:active { box-shadow: inset 0 0 0 2px var(--on-primary); }
+
+/* Neo-brutalism: 날짜 선택은 파랑, 추가 버튼은 노랑. */
+:root[data-theme-style='neo-brutalism'] :is(.task, .row, .acct, .dock, .signin .card) { border-width: 2px; }
+:root[data-theme-style='neo-brutalism'] :is(.bigbtn, .nav a.mid) { border-color: #171717; }
+:root[data-theme-style='neo-brutalism'] .nav a.mid { box-shadow: inset 0 0 0 3px #171717; }
+
+/* Liquid Glass: 렌즈는 배경만 굴절시킨다. 글자와 조작부는 원래 DOM에 남는다. */
+:root[data-theme-style='glassmorphism'][data-theme] :is(#root, .app, .signin) {
+  background-color: var(--cream); background-image: var(--scene); background-size: 100% 100%;
+}
+:root[data-theme-style='glassmorphism'][data-theme] .screenbody { background: transparent; }
+:root[data-theme-style='glassmorphism'][data-theme] :is(.appbar, .nav, .dock) {
+  background: var(--glass-gloss), var(--surface); -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3); border-color: var(--glass-edge);
+}
+:root[data-theme-style='glassmorphism'][data-theme] :is(.task:not(.urgent):not(.done), .row:not(.danger), .acct, .signin .card, .empty .mark) {
+  background: var(--glass-gloss), var(--surface); border-color: var(--glass-edge);
+}
+:root[data-theme-style='glassmorphism'][data-theme] :is(.task, .dock, .row, .nav, .appbar, .acct, .liquid-input, .chip, .pickgrid button, .grid) { isolation: isolate; }
+:root[data-theme-style='glassmorphism'][data-theme] :is(.row, .nav, .appbar, .acct, .liquid-input, .chip, .pickgrid button, .grid) { position: relative; }
+:root[data-theme-style='glassmorphism'][data-theme] .dock { background: var(--glass-gloss), var(--glass-overlay); }
+:root[data-theme-style='glassmorphism'][data-theme] .dx { color: var(--ink); }
+:root[data-theme-style='glassmorphism'][data-theme] .acct { color: var(--ink); }
+:root[data-theme-style='glassmorphism'][data-theme] .task { position: relative; }
+:root[data-theme-style='glassmorphism'][data-theme] .task.urgent { --glass-tint: var(--urgent-bg); border-color: var(--glass-edge); }
+:root[data-theme-style='glassmorphism'][data-theme] :is(.task .ic, .task:not(.done) .box, .task .snooze, .task .pin:not(.on), .dtask:not(.done) .dbox, .dx) { background-color: var(--glass-control); }
+:root[data-theme-style='glassmorphism'][data-theme] .dockbar { background: color-mix(in srgb, var(--selected) 10%, transparent); color: color-mix(in srgb, var(--selected) 68%, var(--ink)); }
+:root[data-theme-style='glassmorphism'][data-theme] .dockbar .chev { stroke: currentColor; }
+:root[data-theme-style='glassmorphism'][data-theme] .dockcount { background: transparent; color: inherit; border-color: currentColor; }
+:root[data-theme-style='glassmorphism'][data-theme] .docklist .dtask { background: transparent; border-color: var(--glass-edge); }
+.liquid-surface {
+  position: absolute; inset: 0; z-index: -1; border-radius: inherit; overflow: hidden; pointer-events: none;
+  /* Safari가 SVG를 준비하는 동안에도 떠 있는 도크 뒤의 글자가 겹쳐 비치지 않는다. */
+  background-color: var(--cream); background-image: var(--scene); background-size: var(--glass-scene-size);
+  background-position: var(--glass-scene-position); background-repeat: no-repeat;
+}
+.liquid-surface::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(ellipse 180px 90px at 18% 0%, rgb(255 255 255 / 15%), transparent 75%), var(--glass-gloss), var(--glass-tint, var(--surface)); box-shadow: inset 0 1px 0 var(--glass-rim), inset 0 -1px 0 rgb(20 44 59 / 16%); }
+.liquid-wallpaper { position: absolute; inset: -48px; background-color: var(--cream); background-image: var(--scene); background-size: var(--glass-scene-size); background-position: calc(var(--glass-scene-x) + 48px) calc(var(--glass-scene-y) + 48px); background-repeat: no-repeat; }
+/* 렌즈 위에 같은 흰 면을 두 번 겹치지 않는다. */
+:root[data-theme-style='glassmorphism'][data-theme] :is(.task, .row, .nav, .appbar, .dock, .acct, .chip, .pickgrid button):has(> .liquid-surface.is-visible [data-liquid-glass]) { background: transparent; }
+:root[data-theme-style='glassmorphism'][data-theme] .nav a { position: relative; isolation: isolate; border-color: var(--glass-edge); }
+:root[data-theme-style='glassmorphism'][data-theme] .nav a:is(.on, .mid) { border-radius: 0; background-image: var(--glass-gloss); box-shadow: inset 0 1px 0 var(--glass-rim); }
+:root[data-theme-style='glassmorphism'][data-theme] :is(.inp, .hourpick, .calhead .step, .pickgrid button:not(.on), .chip:not(.on), .month .day:not(.on), .week .d:not(.on)) { background-color: var(--surface); }
+:root[data-theme-style='glassmorphism'][data-theme] :is(.inp, .hourpick, .calhead .step, .chip, .month .day, .week .d, .mode-options span) { background-image: var(--glass-gloss); box-shadow: inset 0 1px 0 var(--glass-rim), inset 0 -1px 0 rgb(20 44 59 / 10%); }
+/* 달력은 바깥 프레임 없이 날짜 칸만 유리 재질로 표시한다. */
+:root[data-theme-style='glassmorphism'][data-theme] :is(.month .day:not(.on):not(.today), .week .d:not(.on):not(.today), .grid .cell.free) { background-color: var(--glass-control); border-color: var(--glass-edge); }
+:root[data-theme-style='glassmorphism'][data-theme] :is(.month .day, .week .d, .grid .cell.free) { box-shadow: inset 0 1px 0 var(--glass-rim), inset 0 -1px 0 rgb(20 44 59 / 12%); }
+:root[data-theme-style='glassmorphism'][data-theme] .grid { border-radius: var(--radius-control); }
+:root[data-theme-style='glassmorphism'][data-theme] .grid .cell { border-radius: var(--radius-control); }
+:root[data-theme-style='glassmorphism'][data-theme] .grid .hd { color: var(--ink); }
+/* 포커스·타이핑·날짜 피커는 원래 input이 맡고 렌즈는 이벤트를 받지 않는다. */
+:root[data-theme-style='glassmorphism'][data-theme] .liquid-input { display: block; min-width: 0; border-radius: var(--radius-control); }
+:root[data-theme-style='glassmorphism'][data-theme] .liquid-input:has(> .grow) { flex: 1; }
+:root[data-theme-style='glassmorphism'][data-theme] .liquid-input > .inp { display: block; border-color: color-mix(in srgb, var(--line) 65%, transparent); }
+:root[data-theme-style='glassmorphism'][data-theme] .liquid-input:has(> .liquid-surface.is-visible [data-liquid-glass]) > .inp { background: transparent; }
+:root[data-theme-style='glassmorphism'][data-theme] :is(.chip:not(.on), .pickgrid button:not(.on), .calhead .step) { border-color: color-mix(in srgb, var(--line) 45%, var(--glass-edge)); box-shadow: var(--sh-xs); }
+:root[data-theme-style='glassmorphism'][data-theme] .autonote { background: var(--glass-gloss), var(--surface); border-color: var(--glass-edge); border-radius: var(--radius-control); }
+:root[data-theme-style='glassmorphism'][data-theme] :is(.bigbtn, .row:not(.off), .calhead .step, .chip.on, .swatch.on):active,
+:root[data-theme-style='glassmorphism'][data-theme] .task:not(.done):has(.hit:active) { transform: translateY(1px); }
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-theme-style='glassmorphism'][data-theme] :is(.appbar, .nav, .dock) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+/* 설정 선택 카드. 라디오 입력의 네이티브 방향키 조작을 유지한다. */
+.appearance-settings { padding-top: 8px; }
+.appearance-settings fieldset { border: 0; min-width: 0; }
+.appearance-settings legend { font-size: 14px; font-weight: var(--title-weight); margin-bottom: 9px; }
+.mode-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 18px; }
+.mode-options label, .theme-option { position: relative; cursor: pointer; min-width: 0; }
+.appearance-settings input[type='radio'] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.mode-options span { display: grid; place-items: center; min-height: 44px; border: var(--b2); border-radius: var(--radius-control); background: var(--surface); font-size: 13px; }
+.mode-options input:checked + span { background: var(--selected); color: var(--on-selected); }
+.appearance-settings input:focus-visible { outline: none; }
+.appearance-settings input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 3px; }
+.theme-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.theme-option-content { display: block; border: 2px solid var(--line); border-radius: var(--radius-control); padding: 4px; background: var(--surface); }
+.theme-option input:checked + .theme-option-content { border-color: var(--selected); box-shadow: 0 0 0 1px var(--selected); }
+.theme-name { display: flex; align-items: center; justify-content: space-between; gap: 2px; padding: 8px 3px 4px; color: var(--ink); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.theme-check { visibility: hidden; flex: none; font-family: sans-serif; font-size: 14px; }
+.theme-option input:checked + span .theme-check { visibility: visible; color: var(--selected); }
+.theme-sample { display: block; padding: 11px 9px 9px; overflow: hidden; background-color: var(--cream); background-image: var(--scene); color: var(--ink); font-family: var(--disp); font-weight: var(--body-weight); font-synthesis: none; border-radius: var(--radius-control); }
+.sample-heading { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; font-size: 14px; font-weight: var(--title-weight); }
+.sample-heading > span { font-family: var(--pix); font-size: 8px; font-weight: var(--number-weight); color: var(--muted); }
+.sample-task { display: flex; align-items: center; justify-content: space-between; gap: 4px; border: var(--b2); border-radius: min(var(--radius), 8px); background: var(--surface); padding: 7px 6px; margin-bottom: 8px; font-size: 9px; box-shadow: var(--sh-xs); }
+.sample-task > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sample-task i { display: block; width: 10px; height: 10px; border: 1px solid var(--line); flex: none; }
+.sample-urgent { background: var(--urgent-bg); color: var(--urgent-ink); border-color: var(--urgent-border); }
+.sample-urgent i { border-color: var(--urgent-ink); }
+.theme-sample[data-theme-style='glassmorphism'] .sample-task { background-image: var(--glass-gloss); border-color: var(--glass-edge); }
+.sample-nav { display: flex; gap: 5px; padding-top: 5px; }
+.sample-nav i { height: 7px; flex: 1; background: var(--surface); border: 1px solid var(--line); }
+.sample-nav i:first-child { background: var(--selected); border-color: var(--selected); }
+.sample-nav i:nth-child(2) { background: var(--nav-add); border-color: var(--nav-add); }
+.appearance-status { color: var(--muted); font-size: 11px; margin-top: 12px; line-height: 1.5; }
+.appearance-status.error { color: var(--danger-ink); background: var(--danger-bg); padding: 8px; border: 1px solid var(--danger-line); }
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme-style]:not([data-theme-style='classic']) :is(.bigbtn, .row, .task, .calhead .step, .chip, .swatch) { transition: none; }
+}

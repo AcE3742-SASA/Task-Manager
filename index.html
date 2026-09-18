@@ -9,14 +9,18 @@
          다크에서는 settings.ts 가 이 값을 --paper 다크값으로 바꾼다. -->
     <meta name="theme-color" content="#FFFDF8" />
 
-    <!-- 첫 페인트 FOUC 방지. 저장된 테마는 로그인 후에야 읽히므로, 그 전까지는
-         OS 설정으로 data-theme 을 정해 시스템 다크 사용자가 흰 화면을 스치지 않게 한다.
-         로그인 뒤 settings.ts 가 저장값(system/light/dark)으로 덮어쓴다. -->
+    <!-- CSS/React 이전에 마지막 화면 설정 복원. 로그인 뒤 계정 설정이 우선한다.
+         appearance.test.ts가 캐시 검증과 상태바 색을 실제 토큰과 대조한다. -->
     <script>
+      var appearance = {}
+      try { appearance = JSON.parse(localStorage.getItem('sasa-appearance') || '{}') || {} } catch (e) {}
       try {
-        var d = matchMedia('(prefers-color-scheme: dark)').matches
-        document.documentElement.dataset.theme = d ? 'dark' : 'light'
-        if (d) document.querySelector('meta[name=theme-color]').content = '#272e29'
+        var style = ['classic', 'neumorphism', 'neo-brutalism', 'glassmorphism'].indexOf(appearance.themeStyle) >= 0 ? appearance.themeStyle : 'classic'
+        var dark = appearance.theme === 'dark' || (appearance.theme !== 'light' && typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        document.documentElement.dataset.themeStyle = style
+        var colors = { classic: ['#fffdf8', '#272e29'], neumorphism: ['#e8edf2', '#293340'], 'neo-brutalism': ['#fffef9', '#303239'], glassmorphism: ['#eaf3f8', '#101f2c'] }
+        document.querySelector('meta[name=theme-color]').content = colors[style][dark ? 1 : 0]
       } catch (e) {}
     </script>
 

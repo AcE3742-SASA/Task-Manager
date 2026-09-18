@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { LiquidSurface } from './LiquidSurface'
 
 type Props = {
   title: string
@@ -14,6 +15,7 @@ export function Screen({ title, aside, action, children }: Props) {
   return (
     <>
       <header className="appbar">
+        <LiquidSurface />
         <h1>{title}</h1>
         {aside && <span className="aside">{aside}</span>}
         {action}

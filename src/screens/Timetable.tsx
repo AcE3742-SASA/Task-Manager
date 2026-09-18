@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
+import { LiquidInput } from '../components/LiquidInput'
+import { LiquidSurface } from '../components/LiquidSurface'
 import { EmptyState } from '../components/EmptyState'
 import { IconCalendar } from '../components/icons'
 import { useT } from '../lib/i18n'
@@ -118,14 +120,14 @@ export function Timetable({ uid }: { uid: string }) {
 
         {paint ? (
           <div className="chips">
-            <input
+            <LiquidInput
               className="inp grow"
               value={paint.teacher}
               onChange={(e) => setPaint({ ...paint, teacher: e.target.value })}
               placeholder={t('교사', 'Teacher')}
               aria-label={t('교사', 'Teacher')}
             />
-            <input
+            <LiquidInput
               className="inp grow"
               value={paint.room}
               onChange={(e) => setPaint({ ...paint, room: e.target.value })}
@@ -145,6 +147,7 @@ export function Timetable({ uid }: { uid: string }) {
         {err && <div className="hint">{err}</div>}
 
         <div className="grid">
+          <LiquidSurface />
           <span className="hd" />
           {DAYS.map((d) => (
             <span className="hd" key={d}>

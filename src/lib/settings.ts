@@ -4,18 +4,19 @@ import { db } from './firebase'
 import type { Lang } from './i18n'
 import { DEFAULT_NOTIFY } from './notify'
 import type { Notify } from './notify'
+import { applyAppearance, cacheAppearance, DEFAULT_APPEARANCE, normalizeAppearance, readAppearance } from './appearance'
+import type { Appearance } from './appearance'
 
-/** 'system' 은 OS 설정을 따른다. light·dark 는 그걸 무시하고 못박는다. */
-export type Theme = 'system' | 'light' | 'dark'
+export type { Theme, ThemeStyle } from './appearance'
 
 /** 0 = 일요일, 1 = 월요일. "이번 주"의 경계와 자동 기한 계산이 함께 읽는다. */
-export type Settings = { weekStartsOn: 0 | 1; lang: Lang; notify: Notify; theme: Theme }
+export type Settings = { weekStartsOn: 0 | 1; lang: Lang; notify: Notify } & Appearance
 
 export const DEFAULT_SETTINGS: Settings = {
   weekStartsOn: 1,
   lang: 'ko',
   notify: DEFAULT_NOTIFY,
-  theme: 'system',
+  ...DEFAULT_APPEARANCE,
 }
 
 /**
@@ -24,7 +25,7 @@ export const DEFAULT_SETTINGS: Settings = {
  * 순수 함수로 둬서 테스트가 사본이 아니라 이 코드를 검증하게 한다.
  */
 export function mergeSettings(d: Partial<Settings>): Settings {
-  return { ...DEFAULT_SETTINGS, ...d, notify: { ...DEFAULT_NOTIFY, ...d.notify } }
+  return { ...DEFAULT_SETTINGS, ...d, ...normalizeAppearance(d), notify: { ...DEFAULT_NOTIFY, ...d.notify } }
 }
 
 const ref = (uid: string) => {
@@ -51,15 +52,23 @@ export const SettingsContext = createContext<Settings>(DEFAULT_SETTINGS)
 export const useAppSettings = () => useContext(SettingsContext)
 
 export function useSettings(uid: string): Settings {
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
+  const [settings, setSettings] = useState<Settings>(() => ({ ...DEFAULT_SETTINGS, ...readAppearance() }))
 
   useEffect(() => {
     if (!db) return
     return onSnapshot(
       doc(db, 'users', uid, 'settings', 'app'),
-      (snap) => setSettings(mergeSettings((snap.data() ?? {}) as Partial<Settings>)),
-      // 설정을 못 읽어도 앱은 기본값으로 돌아야 한다. 화면을 막지 않는다.
-      () => setSettings(DEFAULT_SETTINGS),
+      { includeMetadataChanges: true },
+      (snap) => {
+        // 서버 응답 전의 빈 캐시로 마지막 테마를 덮어쓰지 않는다.
+        if (!snap.exists() && snap.metadata.fromCache) return
+        const next = mergeSettings((snap.data() ?? {}) as Partial<Settings>)
+        setSettings(next)
+        // 낙관적 로컬 변경은 즉시 표시하지만, 거절될 수 있으므로 캐시하지 않는다.
+        if (!snap.metadata.hasPendingWrites) cacheAppearance(next)
+      },
+      // 읽기 실패 때는 복원된 화면 설정을 유지한다.
+      () => {},
     )
   }, [uid])
 
@@ -69,36 +78,7 @@ export function useSettings(uid: string): Settings {
     document.documentElement.lang = settings.lang
   }, [settings.lang])
 
-  // 다크 모드는 CSS 가 <html data-theme> 만 본다. 'system' 도 여기서 OS 값을
-  // 읽어 light/dark 중 하나로 못박는다 — CSS 에 미디어쿼리를 두지 않으므로
-  // (토큰 블록 중복을 피한다), OS 테마가 바뀌면 리스너로 다시 칠한다.
-  useEffect(() => applyTheme(settings.theme), [settings.theme])
+  useEffect(() => applyAppearance(settings), [settings.theme, settings.themeStyle])
 
   return settings
-}
-
-/** data-theme 을 확정하고, 테마 색과 맞는 상태바 색(theme-color)까지 맞춘다. */
-function resolveTheme(theme: Theme): 'light' | 'dark' {
-  if (theme !== 'system') return theme
-  return typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light'
-}
-
-function applyTheme(theme: Theme): void | (() => void) {
-  const paint = () => {
-    const resolved = resolveTheme(theme)
-    document.documentElement.dataset.theme = resolved
-    // iOS standalone 은 문서 배경색(= --paper)으로 상태바 띠를 칠하므로 이건
-    // 저절로 맞는다. theme-color 는 안드로이드·데스크탑 PWA 용이라 손으로 맞춘다.
-    // 실제 토큰을 읽어 팔레트 변경 시 상태바 색이 뒤처지지 않게 한다.
-    const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--paper').trim())
-  }
-  paint()
-  // 'system' 일 때만 OS 변경을 따라간다. 못박은 테마는 리스너가 필요 없다.
-  if (theme !== 'system' || typeof matchMedia !== 'function') return
-  const mq = matchMedia('(prefers-color-scheme: dark)')
-  mq.addEventListener('change', paint)
-  return () => mq.removeEventListener('change', paint)
 }

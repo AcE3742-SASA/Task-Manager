@@ -1,4 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { applyAppearance, readAppearance } from './lib/appearance'
 import { BottomNav } from './components/BottomNav'
 import { FocusDock } from './components/FocusDock'
 import { SettingsContext, useSettings } from './lib/settings'
@@ -45,6 +47,9 @@ function Shell({ user }: { user: User }) {
 
 export function App() {
   const { user, loading, error } = useAuth()
+  useEffect(() => {
+    if (!user) return applyAppearance(readAppearance())
+  }, [user])
 
   // 로그인 전이라 계정 언어 설정이 아직 없다. SignIn 과 같은 규칙을 쓴다.
   if (loading) return <div className="boot">{makeT(browserLang())('불러오는 중…', 'Loading…')}</div>
@@ -52,5 +57,5 @@ export function App() {
   // 없어 화면이 어차피 비고, db 가 null 인 분기를 화면마다 들고 다니게 만든다.
   if (!user) return <SignIn error={error} />
 
-  return <Shell user={user} />
+  return <Shell key={user.uid} user={user} />
 }

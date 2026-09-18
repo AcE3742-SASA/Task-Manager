@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Screen } from './Screen'
-import { SubjectIcon } from './subject-icons'
+import { SubjectBadge } from './SubjectBadge'
+import { LiquidSurface } from './LiquidSurface'
+import { LiquidInput, LiquidTextarea } from './LiquidInput'
 import { classDayOf, fromLocalInput, kstLabel, nextDue, REPEATS, toLocalInput, todayEnd } from '../lib/due'
 import type { Repeat } from '../lib/due'
 import { createTask, removeTask, saveTask, KINDS, KIND_EN } from '../lib/tasks'
@@ -103,7 +105,7 @@ export function TaskForm({ uid, subjects, task, initialDue }: Props) {
 
         <div className="field">
           <span className="lbl">{t('제목', 'TITLE')}</span>
-          <input
+          <LiquidInput
             className="inp"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -122,7 +124,8 @@ export function TaskForm({ uid, subjects, task, initialDue }: Props) {
                 aria-pressed={s.id === subjectId}
                 onClick={() => setSubjectId(s.id === subjectId ? null : s.id)}
               >
-                <SubjectIcon id={s.icon} />
+                {s.id !== subjectId && <LiquidSurface />}
+                <SubjectBadge icon={s.icon} color={s.color} />
                 {s.name}
               </button>
             ))}
@@ -180,11 +183,12 @@ export function TaskForm({ uid, subjects, task, initialDue }: Props) {
               aria-pressed={noDue}
               onClick={() => setNoDue((v) => !v)}
             >
+              {!noDue && <LiquidSurface />}
               {t('기한 없음', 'No due date')}
             </button>
           </div>
           {!noDue && (
-            <input
+            <LiquidInput
               className="inp pix"
               type="datetime-local"
               value={toLocalInput(due)}
@@ -210,6 +214,7 @@ export function TaskForm({ uid, subjects, task, initialDue }: Props) {
                   aria-pressed={r === repeat}
                   onClick={() => setRepeat(r)}
                 >
+                  {r !== repeat && <LiquidSurface />}
                   {lang === 'en' ? REPEAT_LABELS[r].en : REPEAT_LABELS[r].ko}
                 </button>
               ))}
@@ -235,6 +240,7 @@ export function TaskForm({ uid, subjects, task, initialDue }: Props) {
                 aria-pressed={k === kind}
                 onClick={() => setKind(k)}
               >
+                {k !== kind && <LiquidSurface />}
                 {lang === 'en' ? (KIND_EN[k] ?? k) : k}
               </button>
             ))}
@@ -243,7 +249,7 @@ export function TaskForm({ uid, subjects, task, initialDue }: Props) {
 
         <div className="field">
           <span className="lbl">{t('내용 — 선택', 'NOTE — OPTIONAL')}</span>
-          <textarea
+          <LiquidTextarea
             className="inp ta"
             value={note}
             onChange={(e) => setNote(e.target.value)}

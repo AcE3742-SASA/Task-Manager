@@ -167,6 +167,7 @@ describe('mergeSettings — 마이그레이션 없이 옛 문서를 읽는다', 
       lang: 'ko',
       notify: { morningHour: 7, eveningHour: 21, soonBefore: null },
       theme: 'system',
+      themeStyle: 'classic',
     })
   })
 

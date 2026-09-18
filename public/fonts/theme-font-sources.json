@@ -1,0 +1,72 @@
+{
+  "LINE-Seed-LICENSE.txt": {
+    "source": "https://seed.line.me/src/images/fonts/LINE_Seed_Sans_KR.zip",
+    "sha256": "cdd2dc5d51dc7ff3a31c6c332f7cbf25490b052a75757945b2c20021762b88fb",
+    "bytes": 4088
+  },
+  "line-seed-kr-regular.woff2": {
+    "source": "https://seed.line.me/src/images/fonts/LINE_Seed_Sans_KR.zip",
+    "sha256": "709275188a8ef23040274490cd1fa048a02e9c441a238a4252837258cf8a43df",
+    "bytes": 523808
+  },
+  "line-seed-kr-bold.woff2": {
+    "source": "https://seed.line.me/src/images/fonts/LINE_Seed_Sans_KR.zip",
+    "sha256": "57f95a6c2ce2ff6fa84e28f96bc5d29dcf5a7e308c9a25ed9541eacff3edfa56",
+    "bytes": 463480
+  },
+  "gmarket-sans-medium.woff": {
+    "source": "https://corp.gmarket.com/fonts/GmarketSansTTF.zip",
+    "sha256": "8976f822682b6ddf86b4460bd9807d0e1a681bf3d244179a4c77333e1ae53db7",
+    "bytes": 873164
+  },
+  "gmarket-sans-bold.woff": {
+    "source": "https://corp.gmarket.com/fonts/GmarketSansTTF.zip",
+    "sha256": "ab99be9ff8355aa9fe55e5527d5bd23af206cbe0c1f2a457c69cb65502c23fa4",
+    "bytes": 964760
+  },
+  "Gmarket-Sans-LICENSE.txt": {
+    "source": "https://corp.gmarket.com/fonts/GmarketSansTTF.zip",
+    "sha256": "bf6ac7559837fcfff58d16764afe24c38687a6958825fdf340de667ae52f9473",
+    "bytes": 11466
+  },
+  "suit-regular.woff2": {
+    "source": "https://raw.githubusercontent.com/sun-typeface/SUIT/v2.0.5/fonts/static/woff2/SUIT-Regular.woff2",
+    "sha256": "7a1971b4e54d6d797f105f2d8ad2fc5f5d6fd532195f582d74f4403177e83185",
+    "bytes": 167672
+  },
+  "suit-medium.woff2": {
+    "source": "https://raw.githubusercontent.com/sun-typeface/SUIT/v2.0.5/fonts/static/woff2/SUIT-Medium.woff2",
+    "sha256": "8b69b1832781a1d08867c11979cb01023f7ade30e19cb9e0b8f93588964223f8",
+    "bytes": 170956
+  },
+  "suit-semibold.woff2": {
+    "source": "https://raw.githubusercontent.com/sun-typeface/SUIT/v2.0.5/fonts/static/woff2/SUIT-SemiBold.woff2",
+    "sha256": "a0ea79e549e2ef42930d16c9c5b40600132a7f3661fe0e26a84a20c2c8d182a0",
+    "bytes": 171164
+  },
+  "SUIT-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/sun-typeface/SUIT/v2.0.5/LICENSE",
+    "sha256": "30d101ee3c35ef629d622d933d261a27b2f60223e0a3b0f36791e569c2b9daa9",
+    "bytes": 4380
+  },
+  "space-grotesk-latin.woff2": {
+    "source": "https://fonts.gstatic.com/s/spacegrotesk/v22/V8mDoQDjQSkFtoMM3T6r8E7mPbF4C_k3HqU.woff2",
+    "sha256": "a0d054c4af557de20afd6ca59f47ab353bcaec49c63ff04b6c9d39d0f8910557",
+    "bytes": 22320
+  },
+  "Space-Grotesk-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spacegrotesk/OFL.txt",
+    "sha256": "564ce565c371c5e5bbf286006565a7c9aa55a9f56e7ca58d56e05d649dd61a72",
+    "bytes": 4495
+  },
+  "manrope-latin.woff2": {
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggexSvfedN4.woff2",
+    "sha256": "e310b55a7fd9677f5e3555e6c6c4d064fa1f1d24393f0ddbe217cea12a8c432f",
+    "bytes": 24576
+  },
+  "Manrope-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/manrope/OFL.txt",
+    "sha256": "58172e0c0fac2cda8a37b348164bb55e44b0e69051e557e92b1d3f6910141f7b",
+    "bytes": 4387
+  }
+}

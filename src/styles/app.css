@@ -144,8 +144,8 @@
   background: var(--sagelt);
 }
 .nav a.mid {
-  background: var(--selected);
-  color: var(--on-selected);
+  background: var(--nav-add);
+  color: var(--on-nav-add);
   border-right-color: var(--line);
 }
 
@@ -198,8 +198,8 @@
 .signin .bigbtn {
   width: 100%;
   border: var(--b);
-  background: var(--tan);
-  color: var(--on-accent);
+  background: var(--accent, var(--tan));
+  color: var(--on-primary, var(--on-accent));
   box-shadow: var(--sh-s);
   padding: 14px;
   text-align: center;
@@ -577,8 +577,8 @@
 .bigbtn {
   width: 100%;
   border: var(--b);
-  background: var(--tan);
-  color: var(--on-accent);
+  background: var(--accent, var(--tan));
+  color: var(--on-primary, var(--on-accent));
   box-shadow: var(--sh-s);
   padding: 13px;
   text-align: center;
@@ -834,7 +834,7 @@
   stroke: var(--urgent-muted);
 }
 .task.urgent .due {
-  color: var(--tan);
+  color: var(--urgent-accent, var(--tan));
 }
 .task.urgent .due u {
   color: var(--urgent-muted);
@@ -853,22 +853,22 @@
   border-color: var(--urgent-control);
 }
 .task.urgent .snooze svg {
-  stroke: var(--tan);
+  stroke: var(--urgent-accent, var(--tan));
 }
 /* 잉크 카드 위에서는 미루기와 같은 대접. 꽂힌 상태만 채워진 면으로 튀어나온다. */
 .task.urgent .pin {
   border-color: var(--urgent-control);
 }
 .task.urgent .pin svg {
-  stroke: var(--tan);
+  stroke: var(--urgent-accent, var(--tan));
 }
 .task.urgent .pin.on {
-  background: var(--tan);
-  border-color: var(--tan);
+  background: var(--urgent-accent, var(--tan));
+  border-color: var(--urgent-accent, var(--tan));
 }
 .task.urgent .pin.on svg {
-  stroke: var(--on-accent);
-  fill: var(--on-accent);
+  stroke: var(--on-urgent-accent, var(--on-accent));
+  fill: var(--on-urgent-accent, var(--on-accent));
 }
 
 .task.done {
@@ -1063,15 +1063,6 @@
   padding: 4px 0 0;
   font-family: var(--pix);
   font-size: 10.5px;
-}
-/* 이번 달이 아닌 날은 있는 듯 없는 듯. 달의 형태를 흐리지 않는다.
-   단 opacity 0.3 은 숫자가 2.2:1 이라 읽을 수가 없었다 — 누를 수 있는 칸인데도.
-   면을 비우고 색을 muted 로 내려 "약하게" 는 지키되 읽히게 만든다. */
-.month .day.out {
-  color: var(--muted);
-  background: transparent;
-  border-color: var(--muted);
-  border-style: dashed;
 }
 .month .day.today {
   background: var(--sagelt);
@@ -1404,7 +1395,7 @@
   text-align: left;
 }
 /* 접히면 아래 목록이 없어 경계선이 허공에 뜬다. */
-.dockbar:only-child {
+.dockbar[aria-expanded='false'] {
   border-bottom: 0;
 }
 .dockbar b {
@@ -1505,7 +1496,9 @@
 }
 .dhit em {
   font-style: normal;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin-top: 2px;
   font-size: 10px;
   color: var(--muted);
@@ -1513,6 +1506,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.dhit em > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* 실제 과목색은 모든 테마에서 동일하다. 없는 과목은 중립 아이콘으로 남긴다. */
+.subject-badge {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border: var(--b2);
+  border-radius: var(--radius-control, 0px);
+  background: var(--surface, var(--paper));
+}
+.subject-badge svg { width: 18px; height: 18px; fill: none; stroke: var(--ink); stroke-width: 2; }
+.task.done .ic.subject-badge { opacity: 1; }
+.chip .subject-badge { width: 22px; height: 22px; border-width: 1px; }
+.chip .subject-badge svg { width: 14px; height: 14px; }
+.chip:has(.subject-badge) { padding-block: 7px; }
+.dhit .subject-badge { width: 16px; height: 16px; border-width: 1px; border-radius: min(var(--radius-control, 0px), 4px); }
+.dhit .subject-badge svg { width: 12px; height: 12px; }
+.liquid-input { display: contents; }
 .dx {
   flex: none;
   width: 22px;
