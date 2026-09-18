@@ -48,6 +48,10 @@
 
 ## 검증 범위
 
+서버는 Node 24.x를 사용한다. Firebase Admin 14의 인증 모듈이 `jwks-rsa`를 거쳐 ESM 전용 `jose`를 불러오므로, Vercel에서 기본으로 꺼 둔 require(ESM) 지원이 필요하다. `vercel.json`의 `NODE_OPTIONS=--experimental-require-module`을 유지한다. [공식 설정 설명](https://vercel.com/docs/functions/runtimes/node-js/advanced-node-configuration#experimental-nodejs-require-of-es-module)
+
+`npm run check:server-runtime`은 실제 Firebase Auth·Firestore·Web Push 모듈을 별도 Node 프로세스에서 불러온다. 계정 조회나 네트워크 전송은 하지 않는다. 배포 후에도 인증 없는 두 API 요청이 500이 아닌 401인지 확인한다. 2026-09-19 첫 운영 점검에서 발견한 `ERR_REQUIRE_ESM`은 일반 테스트와 화면 빌드만으로 잡히지 않았던 오류다.
+
 로컬 테스트는 Firebase, PushManager, HTTPS와 web-push를 합성 응답으로 대체한다. `src/lib/push.test.ts`와 `src/server/`의 테스트에서 계정 격리, API 인증, 요청 제한, 잘못된 endpoint, 중복 실행, 시간 경계, 부분 실패, 기록 실패와 전송 강제 중단을 확인한다. 이 결과는 실계정이나 실제 푸시 수신 검증이 아니다. 최종 실행 결과는 [v1.5.0 출시 기록](releases/1.5.0.md)에 남긴다.
 
 출시 전 별도 테스트 계정과 실제 iPhone 홈 화면 PWA에서 수신·알림 클릭·권한 거부·재연결·A→B 계정 전환·로그아웃 실패를 검증해야 한다. 일반 Chrome 데모는 서비스워커와 push 서버를 사용하지 않으므로 이 검증을 대신하지 않는다.

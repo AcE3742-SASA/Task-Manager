@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.5.0",
   "type": "module",
+  "engines": { "node": "24.x" },
   "scripts": {
     "dev": "vite",
     "dev:demo": "vite --mode demo --host 127.0.0.1 --port 5183 --strictPort",
@@ -11,7 +12,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:server-runtime": "node scripts/check-server-runtime.mjs"
   },
   "dependencies": {
     "@samasante/liquid-glass": "0.1.1",
