@@ -1,0 +1,18 @@
+Moneygraphy (머니그라피) — License notice
+
+적용 파일: mg-rounded.woff2 (Moneygraphy-Rounded), mg-pixel.woff2 (Moneygraphy-Pixel)
+권리자: (주)비바리퍼블리카 / Viva Republica, Inc.
+서체 디자인 및 제작: 양장점
+
+공식 페이지에 안내된 사용 조건
+- 개인 사용자와 기업 사용자에게 무료 사용을 허용합니다.
+- 서체의 저작권을 비롯한 권리는 (주)비바리퍼블리카에 있습니다.
+- 서체 수정 및 재배포는 허용하지 않습니다.
+
+이 파일은 공식 사용 조건과 출처를 기록한 안내입니다.
+앱의 코드 라이선스가 이 서체에 적용되거나 별도의 이용 권한을 부여하지 않습니다.
+이 저장소는 서체의 독립 배포처가 아닙니다. 서체 다운로드는 아래 공식 배포처를 이용해 주세요.
+
+공식 라이선스: https://toss.im/moneygraphy-font (페이지 하단 “라이선스”)
+공식 배포 파일: https://static.toss.im/assets/homepage/moneygraphy-font/font/Moneygraphy-1.1.zip
+확인일: 2026-09-18

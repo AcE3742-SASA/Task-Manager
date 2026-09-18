@@ -44,8 +44,8 @@ export function Timetable({ uid }: { uid: string }) {
       // 같은 과목을 다시 누르면 지운다 — 오타를 지우려고 지우개를 따로 고르지 않아도 되게.
       const same = current?.subject.id === paint.id
       await placeSlot(uid, subjects, day, period, same ? null : paint)
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e))
+    } catch {
+      setErr(t('시간표를 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.', 'Could not save the timetable. Check your connection and try again.'))
     }
   }
 
@@ -53,7 +53,7 @@ export function Timetable({ uid }: { uid: string }) {
     return (
       <Screen title={t('시간표', 'Timetable')}>
         <div className="form">
-          <div className="hint">{error}</div>
+          <div className="hint" role="alert">{t('시간표를 불러오지 못했어요. 연결을 확인한 뒤 다시 열어 주세요.', 'Could not load the timetable. Check your connection and reopen it.')}</div>
         </div>
       </Screen>
     )
@@ -70,9 +70,9 @@ export function Timetable({ uid }: { uid: string }) {
         </div>
         <EmptyState
           icon={<IconCalendar />}
-          title={t('배치할 과목이 없다', 'Nothing to place yet')}
+          title={t('시간표에 넣을 과목이 없어요', 'Nothing to place yet')}
           body={t(
-            '과목을 먼저 등록한다. 연구활동·창의적 체험활동도 과목으로 만들면 된다.',
+            '과목을 등록하면 시간표에 배치할 수 있어요. 연구활동이나 창의적 체험활동도 등록할 수 있어요.',
             'Register subjects first. Research and activity blocks work as subjects too.',
           )}
         />
@@ -138,7 +138,7 @@ export function Timetable({ uid }: { uid: string }) {
         ) : (
           <div className="hint">
             {t(
-              '과목을 고른 뒤 칸을 누르면 배치된다. 고른 과목은 그대로 남으니 연속 교시는 계속 누르면 된다. 같은 칸을 다시 누르면 지워진다.',
+              '과목을 고르고 수업이 있는 칸을 눌러 주세요. 여러 교시를 이어서 넣을 수 있어요. 같은 칸을 다시 누르면 지워져요.',
               'Pick a subject, then tap cells to place it. The pick stays selected, so tap straight through consecutive periods. Tap a filled cell again to clear it.',
             )}
           </div>

@@ -1,48 +1,84 @@
-import { collection, getDocs, writeBatch } from 'firebase/firestore'
-import { deleteUser } from 'firebase/auth'
+import { collection, getDocsFromServer, writeBatch } from 'firebase/firestore'
+import type { QueryDocumentSnapshot } from 'firebase/firestore'
+import { deleteUser, getIdTokenResult, reauthenticateWithPopup } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { db } from './firebase'
+import { auth, db, googleProvider } from './firebase'
 import { unsubscribeThisDevice } from './push'
 
-async function dropAll(uid: string, name: string) {
-  if (!db) throw new Error('Firestore 가 설정되지 않았다')
-  const snap = await getDocs(collection(db, 'users', uid, name))
-  if (snap.empty) return 0
-  // 한 학기면 수십 건이지만 writeBatch 상한이 500 이라 끊는다 —
-  // 계정 이전(transfer)이 이 함수로 먼저 비우므로 여러 학기가 쌓인 계정도 지나간다.
-  for (let i = 0; i < snap.docs.length; i += 500) {
-    const batch = writeBatch(db)
-    for (const d of snap.docs.slice(i, i + 500)) batch.delete(d.ref)
-    await batch.commit()
-  }
-  return snap.size
+function need(uid: string) {
+  if (!db || auth?.currentUser?.uid !== uid) throw new Error('현재 계정을 확인하지 못했어요. 다시 로그인해 주세요.')
+  return db
 }
 
-/** 새 학기: 시간표와 할일을 비운다. 설정(주 시작 요일·언어)은 남긴다. */
+async function deletionPlan(uid: string, names: string[]) {
+  const store = need(uid)
+  const groups = await Promise.all(names.map(async name => {
+    const snapshot = await getDocsFromServer(collection(store, 'users', uid, name))
+    if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites)
+      throw new Error('동기화가 끝난 뒤 다시 시도해 주세요. 아직 데이터를 삭제하지 않았어요.')
+    return { name, docs: snapshot.docs }
+  }))
+  const docs = groups.flatMap(group => group.docs)
+  if (docs.length > 500) throw new Error('데이터가 많아 한 번에 안전하게 삭제할 수 없어요. 계정과 데이터는 그대로 유지돼요.')
+  return { groups, docs }
+}
+async function removePlanned(uid: string, docs: QueryDocumentSnapshot[]) {
+  if (docs.length === 0) return
+  const batch = writeBatch(need(uid))
+  for (const d of docs) batch.delete(d.ref)
+  await batch.commit()
+}
+
+/** 빈 캐시를 전체 목록으로 오인하지 않고, 시간표·할 일을 한 번에 비운다. */
 export async function wipeSemester(uid: string) {
-  const tasks = await dropAll(uid, 'tasks')
-  const subjects = await dropAll(uid, 'subjects')
-  return { tasks, subjects }
+  const { groups, docs } = await deletionPlan(uid, ['tasks', 'subjects'])
+  await removePlanned(uid, docs)
+  return { tasks: groups[0].docs.length, subjects: groups[1].docs.length }
 }
 
-export class NeedsFreshLogin extends Error {}
+export class NeedsFreshLogin extends Error {
+  constructor() {
+    super('계정 확인을 마치지 못했어요. 데이터는 삭제하지 않았어요. 로그아웃 후 다시 로그인하고 시도해 주세요.')
+  }
+}
+export class AccountDeletionIncomplete extends Error {
+  constructor() {
+    super('할 일·과목·설정은 삭제했지만 계정 삭제를 완료하지 못했어요. 다시 로그인한 뒤 계정 삭제를 한 번 더 눌러 주세요.')
+  }
+}
 
-/** 계정 삭제: 데이터를 먼저 지우고 계정을 지운다. 순서를 바꾸면 데이터가 고아로 남는다. */
+/** popup이 막힌 iPhone에서는 재로그인한 뒤 다시 시도할 수 있다. 삭제를 자동 재개하지 않는다. */
+async function confirmIdentity(user: User) {
+  need(user.uid)
+  const fresh = async () => {
+    const result = await getIdTokenResult(user, true)
+    const age = Date.now() - new Date(result.authTime).getTime()
+    return Number.isFinite(age) && age >= -60_000 && age < 5 * 60_000
+  }
+  try {
+    if (await fresh()) return
+    await reauthenticateWithPopup(user, googleProvider)
+    if (!await fresh()) throw new NeedsFreshLogin()
+  } catch {
+    throw new NeedsFreshLogin()
+  }
+}
+
+/** 재인증 → 서버에서 전체 삭제 범위 확인 → 구독 해제 → 데이터 → 계정 순서. */
 export async function deleteAccount(user: User) {
-  // 이 기기 구독을 가장 먼저 끊는다 — 아래 어느 단계가 실패해도 이 기기는 즉시 알림을 안 받는다.
-  // 실패해도 계정 삭제 자체는 계속되어야 하므로 예외를 삼킨다.
-  await unsubscribeThisDevice(user.uid).catch(() => {})
-  await wipeSemester(user.uid)
-  await dropAll(user.uid, 'settings')
-  // pushSubs 를 안 지우면 계정이 사라진 뒤에도 cron 의 collectionGroup('pushSubs') 순회에
-  // 이 uid 가 계속 걸린다. settings 문서도 없으니 DEFAULT_NOTIFY(07/21시)로 떨어져
-  // 아무도 못 끄는 알림이 영원히 나간다.
-  await dropAll(user.uid, 'pushSubs')
+  await confirmIdentity(user)
+  const { docs } = await deletionPlan(user.uid, ['tasks', 'subjects', 'settings', 'pushSubs'])
+  // 실패하면 데이터 삭제로 넘어가지 않는다. 계정은 남고 알림만 꺼졌을 수 있다.
+  try {
+    await unsubscribeThisDevice(user.uid)
+  } catch {
+    throw new Error('알림 연결을 정리하지 못했어요. 할 일과 과목은 삭제하지 않았어요. 연결을 확인한 뒤 다시 시도해 주세요.')
+  }
+  await removePlanned(user.uid, docs)
   try {
     await deleteUser(user)
-  } catch (e) {
-    // Firebase 는 오래된 세션의 계정 삭제를 거부한다. 재인증 흐름을 새로 짜지 않고 안내한다.
-    if (e instanceof Error && e.message.includes('requires-recent-login')) throw new NeedsFreshLogin()
-    throw e
+  } catch {
+    // Auth와 Firestore 사이에는 원자 트랜잭션이 없다. 완료된 부분을 정확히 알린다.
+    throw new AccountDeletionIncomplete()
   }
 }

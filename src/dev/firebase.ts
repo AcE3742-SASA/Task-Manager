@@ -1,7 +1,7 @@
 /** vite --mode demo에서만 사용하는 로컬 테스트 계정. 실제 Firebase를 초기화하지 않는다. */
 import type { User } from 'firebase/auth'
 
-const user = { uid: 'local-demo', displayName: '개발용 테스트', email: 'demo@local.test', photoURL: null } as User
+const user = { getIdToken: async () => 'demo-no-network', uid: 'local-demo', displayName: '개발용 테스트', email: 'demo@local.test', photoURL: null } as User
 export const db = {}
 export const auth: { currentUser: User | null } = { currentUser: user }
 export const googleProvider = {}
@@ -22,8 +22,14 @@ export const deleteUser = signOut
 // 데모는 서비스워커·푸시 서버에 연결하지 않는다.
 export const pushSupported = () => false
 export const permission = () => 'unsupported' as const
-export const isSubscribedHere = async () => false
 export const unsubscribeThisDevice = async () => {}
 export const subscribeThisDevice = async () => { throw new Error('unsupported') }
 
 if (typeof document !== 'undefined') document.title = '[DEV] Task Manager · 로컬 테스트'
+
+export const getIdTokenResult = async () => ({ authTime: new Date().toISOString() })
+export const reauthenticateWithPopup = async () => ({ user })
+export const reconcilePushAccount = async () => {}
+export const signOutSafely = async () => signOut()
+export const getPushStatus = async () => 'unsupported' as const
+export const sendTestPush = async () => { throw new Error('unsupported') }

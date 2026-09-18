@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import {
   Timestamp,
   addDoc,
@@ -80,19 +80,55 @@ function col(uid: string) {
   return collection(db, 'users', uid, 'tasks')
 }
 
-export function createTask(uid: string, input: TaskInput, meta: EntryMeta) {
-  return addDoc(col(uid), {
+export class TaskConflictError extends Error {
+  constructor(readonly code: 'task/already-exists' | 'task/changed' | 'task/not-found', readonly taskId: string) {
+    super(code === 'task/already-exists'
+      ? '이 초안은 이미 저장됐고 내용이 달라졌어요. 기존 할 일을 확인하거나 새 할 일로 저장해 주세요.'
+      : code === 'task/changed'
+        ? '다른 곳에서 이 할 일을 수정했어요. 최신 내용을 확인한 뒤 다시 저장해 주세요.'
+        : '이 할 일을 찾을 수 없어요. 이미 삭제됐을 수 있어요.')
+  }
+}
+
+function matchesInput(current: Record<string, unknown>, expected: ReturnType<typeof clean>): boolean {
+  return (current.title ?? '') === expected.title && (current.note ?? '') === expected.note &&
+    (current.subjectId ?? null) === expected.subjectId && (current.kind ?? '과제') === expected.kind &&
+    (current.repeat ?? 'none') === expected.repeat &&
+    (toDate(current.due)?.getTime() ?? null) === (expected.due?.toMillis() ?? null)
+}
+
+export function createTask(uid: string, input: TaskInput, meta: EntryMeta, id?: string) {
+  const value = {
     ...clean(input),
     ...meta,
     done: false,
     doneAt: null,
     createdAt: serverTimestamp(),
+  }
+  if (!id) return addDoc(col(uid), value)
+  const ref = doc(col(uid), id)
+  // 응답을 못 받은 초안을 다시 제출해도 완료·수정된 기존 항목을 덮지 않는다.
+  return runTransaction(ref.firestore, async (tx) => {
+    const snapshot = await tx.get(ref)
+    if (!snapshot.exists()) tx.set(ref, value)
+    else if (!matchesInput(snapshot.data(), value)) throw new TaskConflictError('task/already-exists', id)
   })
 }
 
-/** 수정은 폼이 다루는 5개만 덮는다. done · createdAt · 등록 지표는 그대로 둔다. */
-export function saveTask(uid: string, id: string, input: TaskInput) {
-  return updateDoc(doc(col(uid), id), clean(input))
+/** 폼을 연 뒤 다른 기기에서 바뀐 내용을 오래된 입력으로 덮지 않는다. */
+export function saveTask(uid: string, id: string, input: TaskInput, baseline: TaskInput) {
+  const ref = doc(col(uid), id)
+  const value = clean(input)
+  const expected = clean(baseline)
+  return runTransaction(ref.firestore, async tx => {
+    const snapshot = await tx.get(ref)
+    if (!snapshot.exists()) throw new TaskConflictError('task/not-found', id)
+    const current = snapshot.data()
+    // 첫 응답만 놓친 재시도는 성공으로 처리한다. 완료 상태 등 다른 필드는 건드리지 않는다.
+    if (matchesInput(current, value)) return
+    if (!matchesInput(current, expected)) throw new TaskConflictError('task/changed', id)
+    tx.update(ref, value)
+  })
 }
 
 export function removeTask(uid: string, id: string) {
@@ -101,7 +137,24 @@ export function removeTask(uid: string, id: string) {
 
 /** 기한만 하루 뒤로 민다. 완료·등록 지표·다른 필드는 건드리지 않는다. */
 export function snoozeTask(uid: string, task: Task, next: Date) {
-  return updateDoc(doc(col(uid), task.id), { due: Timestamp.fromDate(next) })
+  if (!task.due) return Promise.reject(new Error('먼저 기한을 정해 주세요.'))
+  return changeDue(uid, task.id, task.due, next).then(() =>
+    () => changeDue(uid, task.id, next, task.due!),
+  )
+}
+
+/** 다른 기기에서 바꾼 기한을 오래된 변경/되돌리기가 덮어쓰지 않는다. */
+async function changeDue(uid: string, id: string, expected: Date, next: Date) {
+  const ref = doc(col(uid), id)
+  await runTransaction(ref.firestore, async (tx) => {
+    const snapshot = await tx.get(ref)
+    if (!snapshot.exists()) throw new TaskConflictError('task/not-found', id)
+    const current = snapshot.data()
+    if (current.done || toDate(current.due)?.getTime() !== expected.getTime()) {
+      throw new TaskConflictError('task/changed', id)
+    }
+    tx.update(ref, { due: Timestamp.fromDate(next) })
+  })
 }
 
 /**
@@ -154,18 +207,27 @@ export async function toggleDone(uid: string, task: Task) {
   })
 }
 
-type State = { tasks: Task[]; loading: boolean; error: string | null }
+type State = { tasks: Task[]; loading: boolean; error: string | null; pending: boolean; fromCache: boolean }
+export const TasksContext = createContext<State | null>(null)
 
 export function useTasks(uid: string): State {
-  const [state, setState] = useState<State>({ tasks: [], loading: true, error: null })
+  const shared = useContext(TasksContext)
+  const local = useTaskSubscription(shared ? null : uid)
+  return shared ?? local
+}
+
+export function useTaskSubscription(uid: string | null): State {
+  const [state, setState] = useState<State>({ tasks: [], loading: true, error: null, pending: false, fromCache: true })
 
   useEffect(() => {
+    if (!uid) return
     if (!db) {
-      setState({ tasks: [], loading: false, error: 'Firestore 가 설정되지 않았다' })
+      setState((s) => ({ ...s, loading: false, error: '서비스 연결 설정을 확인해 주세요.' }))
       return
     }
     return onSnapshot(
       collection(db, 'users', uid, 'tasks'),
+      { includeMetadataChanges: true },
       (snap) => {
         const tasks = snap.docs
           .map((d) => {
@@ -193,7 +255,7 @@ export function useTasks(uid: string): State {
               (a.due?.getTime() ?? Infinity) - (b.due?.getTime() ?? Infinity) ||
               (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0),
           )
-        setState({ tasks, loading: false, error: null })
+        setState({ tasks, loading: false, error: null, pending: snap.metadata.hasPendingWrites, fromCache: snap.metadata.fromCache })
       },
       (e) => setState((s) => ({ ...s, loading: false, error: e.message })),
     )

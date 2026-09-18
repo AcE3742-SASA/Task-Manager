@@ -18,8 +18,8 @@ try {
   assert.equal(await page.locator('.task').count(), 5)
   assert.equal(await page.locator('.signin').count(), 0)
   assert.match(await page.title(), /\[DEV\]/)
-  await page.locator('.nav a[href="/settings"]').click()
   await page.locator('.dockbar').click()
+  await page.locator('.nav a[href="/settings"]').click()
   for (const style of ['classic', 'neumorphism', 'neo-brutalism', 'glassmorphism']) {
     await page.locator(`label:has(input[value="${style}"])`).click()
     await page.waitForFunction(value => document.documentElement.dataset.themeStyle === value, style)

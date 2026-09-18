@@ -9,6 +9,7 @@ import { useAppSettings } from '../lib/settings'
 import { useSubjects } from '../lib/subjects'
 import { snoozeTask, toggleDone, toggleFocus, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
+import { useNow } from '../lib/useNow'
 
 const WD_KO = ['일', '월', '화', '수', '목', '금', '토']
 const WD_EN = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -39,7 +40,7 @@ export function Calendar({ uid }: { uid: string }) {
   const lastPointerType = useRef('')
 
   const [mode, setMode] = useState<'month' | 'week'>('month')
-  const today = new Date()
+  const today = useNow()
   /** 오늘 끝낼 것 목록의 키. 여기서 today 는 Date 라 문자열은 따로 둔다. */
   const todayKey = kstToday(today)
   const [cursor, setCursor] = useState(today)
@@ -246,7 +247,7 @@ export function Calendar({ uid }: { uid: string }) {
 
       {shown.length === 0 ? (
         <div className="form">
-          <div className="hint">{t('이 날 마감은 없다.', 'Nothing due on this day.')}</div>
+          <div className="hint">{t('이날 마감인 할 일이 없어요.', 'Nothing due on this day.')}</div>
         </div>
       ) : (
         shown.map((task) => (

@@ -53,10 +53,10 @@ Safari가 같은 사이트로 인식하게 만든다. 아이폰 PWA에서 로그
 
 ## 6. 환경변수 등록 ⚠️ 여기가 함정
 
-Vercel 프로젝트 → **Settings → Environment Variables** 에 아래 표의 값들을 전부 넣는다.
-Production · Preview · Development 셋 다 체크한다. 하나라도 빠지면 로그인 화면에
-"FIREBASE 설정 없음"이 뜨거나, `/api/notify` 가 500 을 내거나, 설정 화면에
-"VAPID 키가 설정되지 않았다"가 뜬다.
+Vercel 프로젝트 → **Settings → Environment Variables**에 환경별 값을 넣는다.
+운영 값은 Production에 등록하고, Preview와 Development에서 실제 발송을 검증할 때는
+별도 테스트 Firebase 프로젝트와 키를 사용한다. 필요한 설정이 빠지면 로그인 화면이나
+알림 설정에 오류가 표시되며 알림 API는 503을 반환할 수 있다.
 
 | 이름 | 값 |
 |---|---|
@@ -72,6 +72,8 @@ Production · Preview · Development 셋 다 체크한다. 하나라도 빠지�
 | `VAPID_SUBJECT` | `mailto:본인이메일` 형식 |
 | `FIREBASE_SERVICE_ACCOUNT` | 서비스 계정 JSON 전체 (아래에서 받는다) |
 | `CRON_SECRET` | 무작위 문자열. **GitHub 저장소 시크릿에도 같은 값을 등록해야 한다** (11번) |
+| `CRON_JOB_SECRET` | cron-job.org의 Authorization 헤더에 등록할 별도 서버 전용 키. 기존 `CRON_SECRET`과 다른 값 |
+| `NOTIFY_START_AT` | 선택. 첫 예약 기록을 만들 때 사용할 시작 정각(ISO UTC). 기존 발송을 재발송하지 않는 전환 절차는 11번 참조 |
 
 **`VITE_FIREBASE_AUTH_DOMAIN` 만 firebaseConfig 값과 다르다.** Firebase가 알려주는
 `xxx.firebaseapp.com` 이 아니라 **Vercel 배포 주소**를 넣는다. 5번의 rewrite와 짝이다.
@@ -90,14 +92,16 @@ Vite 빌드가 클라이언트에 넣는 값이고 하나는 서버리스 함수
 **`FIREBASE_SERVICE_ACCOUNT` 받기**: Firebase 콘솔 → **프로젝트 설정 → 서비스 계정** →
 **새 비공개 키 생성**. 다운로드된 JSON 파일 내용 전체를 값으로 붙여넣는다.
 
-**`CRON_SECRET` 만들기**:
+**예약 호출 키 만들기**:
 
 ```bash
 openssl rand -hex 32
 ```
 
-이 값은 **두 군데**에 들어간다 — Vercel 환경변수(위 표)와 GitHub Actions 시크릿(11번).
-하나만 맞으면 cron 호출이 401 로 거부된다.
+기존 `CRON_SECRET`은 Vercel과 GitHub Actions에 같은 값을 유지한다.
+cron-job.org에는 별도로 생성한 `CRON_JOB_SECRET`을 사용한다. 이 키는 Vercel과
+cron-job.org 작업의 Authorization 헤더에만 등록한다. 값을 채팅, URL, 저장소에 넣지 않는다.
+키가 서로 다르면 예약 호출이 401로 거부된다. 자세한 전환 순서는 11번을 따른다.
 
 넣은 뒤 Vercel에서 **Redeploy** (환경변수는 재배포해야 반영된다).
 
@@ -173,9 +177,14 @@ npm run dev
 
 **색인은 만들지 않아도 된다.** 과목이 10개 남짓이라 정렬을 앱이 직접 한다.
 
-## 11. GitHub Actions cron 설정
+## 11. 예약 알림 설정과 cron-job.org 전환
 
-매시 정각에 `/api/notify` 를 호출하는 워크플로가 필요로 하는 값 둘이다.
+v1.5.0의 권장 경로는 `cron-job.org → Vercel /api/notify → Web Push`다.
+5분마다 호출하고 중복 억제와 지연 복구는 서버가 처리한다. 인증키, 첫 전환 시각,
+실패 알림, 보관 기록과 복구 절차는 [cron-job.org 설정](cron-job-setup.md)을 따른다.
+문서와 코드가 준비된 상태이며, 운영 작업 생성과 기기 수신 확인은 별도다.
+
+새 경로가 준비될 때까지 기존 GitHub 예약을 유지한다. 필요한 값은 다음과 같다.
 
 1. GitHub 저장소 → **Settings → Secrets and variables → Actions**
 2. **Secrets** 탭 → **New repository secret** → 이름 `CRON_SECRET`, 값은 6번에서
@@ -183,7 +192,12 @@ npm run dev
 3. **Variables** 탭 → **New repository variable** → 이름 `NOTIFY_URL`, 값
    `https://<배포주소>/api/notify` (예: `https://sasa-task-manager.vercel.app/api/notify`)
 
-시크릿과 변수를 헷갈리지 않는다 — `CRON_SECRET` 은 Secrets 탭, `NOTIFY_URL` 은 Variables 탭이다.
+`CRON_SECRET`은 Secrets 탭, `NOTIFY_URL`은 Variables 탭이다.
+새 예약의 성공을 확인한 뒤 Variables의 `NOTIFY_SCHEDULER`를 `cron-job.org`로 설정하면
+GitHub의 schedule 실행만 건너뛴다. 수동 실행은 남는다. 변수 설정 자체는 이번 코드 변경에 포함되지 않는다.
+
+서버 기록은 만료 후 예약 실행이 작은 배치로 정리한다. Firestore TTL 정책은 필수가 아니다.
+예약이 중단되면 정리도 지연된다. 기록 종류와 보존 범위는 [푸시 신뢰성](push-reliability.md)을 확인한다.
 
 ---
 
@@ -200,5 +214,5 @@ npm run dev
 | 과목 저장 시 "Missing or insufficient permissions" | 10번 규칙 미게시, 또는 붙여넣기 후 **게시** 안 누름 |
 | 과목 화면이 계속 "불러오는 중" | 10번 Firestore 데이터베이스 자체가 없음 |
 | 설정 화면에 "VAPID 키가 설정되지 않았다" | `VITE_VAPID_PUBLIC` 미등록, 또는 등록 후 재배포 안 함 |
-| `/api/notify` 가 500 | `VAPID_PRIVATE` · `VAPID_SUBJECT` · `FIREBASE_SERVICE_ACCOUNT` 중 하나 미등록 |
-| cron 이 401 | 11번 GitHub `CRON_SECRET` 이 Vercel 값과 다름 |
+| `/api/notify`가 503 | 서버 설정 누락, Firestore 조회 실패 또는 일부 발송 실패. 응답의 오류 코드와 집계 확인 |
+| 예약 호출이 401 | 해당 스케줄러의 Authorization 키가 Vercel의 `CRON_SECRET` 또는 `CRON_JOB_SECRET`과 다름 |

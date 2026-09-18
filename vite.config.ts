@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      includeAssets: ['apple-touch-icon.png', 'fonts/*.woff2', 'fonts/*.woff'],
+      includeAssets: ['apple-touch-icon.png', 'fonts/*LICENSE.txt'],
       manifest: {
         name: 'SASA 할 일',
         short_name: '할 일',
@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,woff,woff2,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,png,svg}', 'fonts/*LICENSE.txt'],
       },
     }),
   ],

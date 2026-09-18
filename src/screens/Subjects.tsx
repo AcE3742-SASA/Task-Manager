@@ -37,10 +37,11 @@ export function Subjects({ uid }: { uid: string }) {
     >
       {error && (
         <div className="form">
-          <div className="hint">
-            <b>{t('불러오지 못했다', 'Could not load')}</b>
+          <div className="hint" role="alert">
+            <b>{t('과목을 불러오지 못했어요', 'Could not load')}</b>
             <br />
-            {error}
+            {t('연결을 확인하고 다시 시도해 주세요.', 'Check your connection and try again.')}
+            <button className="guide-link" onClick={() => window.location.reload()}>{t('다시 불러오기', 'Reload')}</button>
           </div>
         </div>
       )}
@@ -83,9 +84,9 @@ export function Subjects({ uid }: { uid: string }) {
       {!error && !loading && subjects.length === 0 && (
         <EmptyState
           icon={<IconPlus />}
-          title={t('과목이 아직 없다', 'No subjects yet')}
+          title={t('아직 등록한 과목이 없어요', 'No subjects yet')}
           body={t(
-            '과목을 먼저 등록한 뒤 시간표 격자에 배치한다. 연구활동·창의적 체험활동도 과목으로 만든다.',
+            '과목을 만들면 시간표에 배치할 수 있어요. 연구활동이나 창의적 체험활동도 과목으로 등록할 수 있어요.',
             'Register subjects first, then place them on the timetable grid. Research and activity blocks count as subjects too.',
           )}
         />

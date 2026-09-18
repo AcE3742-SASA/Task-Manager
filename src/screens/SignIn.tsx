@@ -35,7 +35,7 @@ export function SignIn({ error }: { error: string | null }) {
   return (
     <div className="signin">
       <div className="card">
-        <span className="eyebrow">SASA TASK MANAGER / R1</span>
+        <span className="eyebrow">SASA Task Manager</span>
         {lang === 'en' ? (
           <h1>
             Every assignment,
@@ -51,8 +51,8 @@ export function SignIn({ error }: { error: string | null }) {
         )}
         <p>
           {t(
-            'Google 계정으로 로그인하면 맥에서 넣은 과제를 아이폰에서 그대로 본다. 계정 하나에 네 데이터만 들어간다.',
-            'Sign in with Google and the tasks you add on your Mac show up on your iPhone. One account, your data only.',
+            'Google 계정으로 로그인하면 휴대폰과 컴퓨터에서 같은 할 일을 볼 수 있어요. 할 일과 시간표는 나만 볼 수 있어요.',
+            'Sign in with Google to use the same tasks on your phone and computer. Your tasks and timetable are private to your account.',
           )}
         </p>
       </div>
@@ -63,19 +63,19 @@ export function SignIn({ error }: { error: string | null }) {
           {!busy && <IconArrow />}
         </button>
       ) : (
-        <div className="err">
-          <b>{t('FIREBASE 설정 없음', 'FIREBASE NOT CONFIGURED')}</b>
+        <div className="err" role="alert">
+          <b>{t('지금은 로그인할 수 없어요', 'Sign-in unavailable')}</b>
           {t(
-            '.env.local 에 VITE_FIREBASE_* 6개 값이 비어 있다. docs/setup-firebase-vercel.md 의 순서를 따라 채운 뒤 다시 배포하면 된다.',
-            'The six VITE_FIREBASE_* values in .env.local are empty. Fill them following docs/setup-firebase-vercel.md, then redeploy.',
+            '잠시 후 다시 시도해 주세요.',
+            'Please try again later.',
           )}
         </div>
       )}
 
       {shown && (
-        <div className="err">
-          <b>{t('로그인 실패', 'SIGN-IN FAILED')}</b>
-          {shown}
+        <div className="err" role="alert">
+          <b>{t('로그인하지 못했어요', 'SIGN-IN FAILED')}</b>
+          {t('연결을 확인한 뒤 Google로 계속하기를 눌러 다시 시도해 주세요.', 'Check your connection, then select Continue with Google to try again.')}
         </div>
       )}
     </div>

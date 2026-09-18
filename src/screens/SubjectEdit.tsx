@@ -25,12 +25,12 @@ export function SubjectEdit({ uid }: { uid: string }) {
   const t = useT()
   const title = t('과목', 'Subject')
 
-  if (error) return <Notice title={title} body={error} />
+  if (error) return <Notice title={title} body={t('과목을 불러오지 못했어요. 연결을 확인한 뒤 다시 열어 주세요.', 'Could not load this subject. Check your connection and reopen it.')} />
   if (id && loading) return <Notice title={title} body={t('불러오는 중…', 'Loading…')} />
 
   const existing = id ? subjects.find((s) => s.id === id) : undefined
   if (id && !existing)
-    return <Notice title={title} body={t('없는 과목이다.', 'No such subject.')} />
+    return <Notice title={title} body={t('이 과목을 찾을 수 없어요.', 'No such subject.')} />
 
   // key 로 과목이 바뀔 때 폼 상태를 통째로 새로 만든다 — 초기값 동기화 코드를 안 짜는 방법.
   return <Form uid={uid} subject={existing} key={existing?.id ?? 'new'} />
@@ -67,8 +67,8 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
       if (subject) await saveSubject(uid, subject.id, input)
       else await createSubject(uid, input)
       navigate('/subjects')
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e))
+    } catch {
+      setErr(t('과목을 저장하지 못했어요. 입력한 내용은 그대로예요. 연결을 확인하고 다시 저장해 주세요.', 'Could not save the subject. Your entries are still here. Check your connection and save again.'))
       setBusy(false)
     }
   }
@@ -78,13 +78,13 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
     const warn =
       n > 0
         ? t(
-            `\n시간표에 배치된 ${n}칸도 함께 사라진다.`,
+            `\n시간표에 배치된 ${n}칸도 함께 삭제돼요.`,
             `\nThe ${n} timetable slots using it go too.`,
           )
         : ''
     if (
       !confirm(
-        t(`"${subject?.name}" 과목을 삭제한다.${warn}`, `Delete "${subject?.name}".${warn}`),
+        t(`"${subject?.name}" 과목을 삭제할까요?${warn}`, `Delete "${subject?.name}".${warn}`),
       )
     )
       return
@@ -92,8 +92,8 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
     try {
       await removeSubject(uid, subject!.id)
       navigate('/subjects')
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e))
+    } catch {
+      setErr(t('과목을 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요.', 'Could not delete the subject. Check your connection and try again.'))
       setBusy(false)
     }
   }
@@ -108,11 +108,12 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
       }
     >
       <div className="form">
-        {err && <div className="hint">{err}</div>}
+        {err && <div className="hint" role="alert">{err}</div>}
 
         <div className="field">
-          <span className="lbl">{t('과목 이름', 'Subject name')}</span>
+          <label className="lbl" htmlFor="subject-name">{t('과목 이름', 'Subject name')}</label>
           <LiquidInput
+            id="subject-name"
             className="inp"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -122,10 +123,11 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
         </div>
 
         <div className="field">
-          <span className="lbl">
-            {t(`줄임말 — 최대 ${SHORT_MAX}글자`, `Short name — ${SHORT_MAX} chars max`)}
-          </span>
+          <label className="lbl" htmlFor="subject-short">
+            {t(`줄임말 (최대 ${SHORT_MAX}글자)`, `Short name — ${SHORT_MAX} chars max`)}
+          </label>
           <LiquidInput
+            id="subject-short"
             className="inp pix"
             value={short}
             maxLength={SHORT_MAX}
@@ -197,7 +199,7 @@ function Form({ uid, subject }: { uid: string; subject?: Subject }) {
           <button className="row danger" disabled={busy} onClick={drop}>
             <span className="rl">
               <b>{t('과목 삭제', 'Delete subject')}</b>
-              <em>{t('배치된 시간표 칸도 함께 사라진다', 'Its timetable slots go too')}</em>
+              <em>{t('시간표에 배치된 칸도 함께 삭제돼요', 'Its timetable slots go too')}</em>
             </span>
           </button>
         )}

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Lang } from './i18n'
@@ -33,33 +33,85 @@ const ref = (uid: string) => {
   return doc(db, 'users', uid, 'settings', 'app')
 }
 
-export function saveSettings(uid: string, patch: Partial<Settings>) {
+export type SettingsPatch = Partial<Omit<Settings, 'notify'>> & { notify?: Partial<Notify> }
+
+export function saveSettings(uid: string, patch: SettingsPatch) {
   return setDoc(ref(uid), patch, { merge: true })
 }
 
-/**
- * merge:true 는 중첩 맵도 granular 하게 병합한다 — 아침만 넘겨도 저녁 값은
- * 손대지 않는다 (빈 맵을 넘길 때만 통째로 갈린다).
- * updateDoc 의 dot-path 도 같은 일을 하지만 문서가 없으면 던진다.
- * 설정을 한 번도 안 건드린 계정에는 이 문서가 아직 없다.
- */
-export const saveNotify = (uid: string, patch: Partial<Notify>) =>
-  setDoc(ref(uid), { notify: patch }, { merge: true })
+export type SettingsState = Settings & {
+  settingsStatus: { readError: boolean; fromCache: boolean; hasPendingWrites: boolean }
+}
+const INITIAL_STATUS = { readError: false, fromCache: true, hasPendingWrites: false }
+export const SettingsContext = createContext<SettingsState>({ ...DEFAULT_SETTINGS, settingsStatus: INITIAL_STATUS })
 
-export const SettingsContext = createContext<Settings>(DEFAULT_SETTINGS)
+/** 실패한 최신 필드만 다시 시도한다. 대기 중인 쓰기는 중복 제출하지 않는다. */
+export function useSettingsMutation(uid: string) {
+  const [status, setStatus] = useState({ saving: false, failed: false })
+  const fresh = () => ({ next: 0, pending: 0, latest: new Map<string, number>(), failures: new Map<string, SettingsPatch>() })
+  const current = useRef(fresh())
+  useEffect(() => {
+    current.current = fresh()
+    setStatus({ saving: false, failed: false })
+  }, [uid])
+
+  async function save(patch: SettingsPatch) {
+    // 알림의 세 필드도 독립적으로 다룬다. 아침 저장 실패가 언어 변경 뒤에 숨지 않는다.
+    const parts = Object.entries(patch).flatMap<[string, SettingsPatch]>(([key, value]) =>
+      key === 'notify'
+        ? Object.entries(value ?? {}).map<[string, SettingsPatch]>(([field, setting]) => [`notify.${field}`, { notify: { [field]: setting } }])
+        : [[key, { [key]: value }]],
+    )
+    if (!parts.length) return
+    const state = current.current
+    const request = ++state.next
+    state.pending++
+    for (const [key] of parts) {
+      state.latest.set(key, request)
+      state.failures.delete(key)
+    }
+    setStatus({ saving: true, failed: state.failures.size > 0 })
+    try {
+      await saveSettings(uid, patch)
+    } catch {
+      for (const [key, value] of parts) {
+        if (state.latest.get(key) === request) state.failures.set(key, value)
+      }
+    } finally {
+      state.pending--
+      if (current.current === state) setStatus({ saving: state.pending > 0, failed: state.failures.size > 0 })
+    }
+  }
+  function retry() {
+    const patch: SettingsPatch = {}
+    for (const value of current.current.failures.values()) {
+      const notify = value.notify ? { ...patch.notify, ...value.notify } : patch.notify
+      Object.assign(patch, value)
+      if (notify) patch.notify = notify
+    }
+    return save(patch)
+  }
+  return { save, ...status, retry }
+}
 
 /** 화면들은 이걸로 읽는다. props 로 내려보내지 않는다 — 거의 모든 화면이 필요로 한다. */
 export const useAppSettings = () => useContext(SettingsContext)
 
-export function useSettings(uid: string): Settings {
+export function useSettings(uid: string): SettingsState {
   const [settings, setSettings] = useState<Settings>(() => ({ ...DEFAULT_SETTINGS, ...readAppearance() }))
+  const [settingsStatus, setStatus] = useState(INITIAL_STATUS)
 
   useEffect(() => {
-    if (!db) return
+    setStatus(INITIAL_STATUS)
+    if (!db) {
+      setStatus({ ...INITIAL_STATUS, readError: true })
+      return
+    }
     return onSnapshot(
       doc(db, 'users', uid, 'settings', 'app'),
       { includeMetadataChanges: true },
       (snap) => {
+        setStatus({ readError: false, fromCache: snap.metadata.fromCache, hasPendingWrites: snap.metadata.hasPendingWrites })
         // 서버 응답 전의 빈 캐시로 마지막 테마를 덮어쓰지 않는다.
         if (!snap.exists() && snap.metadata.fromCache) return
         const next = mergeSettings((snap.data() ?? {}) as Partial<Settings>)
@@ -68,7 +120,7 @@ export function useSettings(uid: string): Settings {
         if (!snap.metadata.hasPendingWrites) cacheAppearance(next)
       },
       // 읽기 실패 때는 복원된 화면 설정을 유지한다.
-      () => {},
+      () => setStatus((value) => ({ ...value, readError: true })),
     )
   }, [uid])
 
@@ -80,5 +132,5 @@ export function useSettings(uid: string): Settings {
 
   useEffect(() => applyAppearance(settings), [settings.theme, settings.themeStyle])
 
-  return settings
+  return { ...settings, settingsStatus }
 }

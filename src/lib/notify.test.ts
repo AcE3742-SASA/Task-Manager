@@ -110,14 +110,14 @@ describe('countDueSoon', () => {
 })
 
 describe('dueSoonCopy', () => {
-  it('건수와 여유 시간을 담고 List 로 보낸다', () => {
-    const c = dueSoonCopy('ko', 2, 3)
-    expect(c.body).toBe('3시간 안에 마감 2건')
+  it('정각 버킷을 정확한 남은 시간처럼 표시하지 않고 List 로 보낸다', () => {
+    const c = dueSoonCopy('ko', 2)
+    expect(c.body).toBe('마감이 가까운 할 일 2건')
     expect(c.screen).toBe('/')
   })
 
   it('영어 문구가 따로 있다', () => {
-    expect(dueSoonCopy('en', 1, 2).body).toBe('1 due within 2h')
+    expect(dueSoonCopy('en', 1).body).toBe('1 tasks due soon')
   })
 })
 
@@ -136,7 +136,7 @@ describe('notifyCopy', () => {
 
   it('저녁은 건수를 쓰지 않고 New 로 보낸다', () => {
     const c = notifyCopy('evening', 'ko', { today: 0, tomorrow: 0 })
-    expect(c.body).toBe('오늘 받은 과제, 지금 넣어두자.')
+    expect(c.body).toBe('오늘 받은 과제를 잊기 전에 기록해 두세요.')
     expect(c.screen).toBe('/new')
   })
 

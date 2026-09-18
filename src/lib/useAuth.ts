@@ -26,7 +26,7 @@ export function useAuth(): AuthState {
 
     return onAuthStateChanged(auth, (user) => {
       setState((s) => ({ ...s, user, loading: false }))
-    })
+    }, () => setState({ user: null, loading: false, error: 'auth-read-failed' }))
   }, [])
 
   return state
