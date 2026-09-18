@@ -1,36 +1,19 @@
-import { useRef, useState } from 'react'
 import { THEME_STYLES } from '../lib/appearance'
-import type { Appearance, Theme } from '../lib/appearance'
-import { saveSettings, useAppSettings } from '../lib/settings'
+import type { Theme } from '../lib/appearance'
+import { useSettingsMutation, useAppSettings } from '../lib/settings'
 import { useT } from '../lib/i18n'
 
 const NAMES = {
-  classic: 'Classic',
-  neumorphism: 'Neumorphism',
-  'neo-brutalism': 'Neo-brutalism',
-  glassmorphism: 'Glassmorphism',
-}
+  classic: ['클래식', 'Classic'],
+  neumorphism: ['뉴모피즘', 'Neumorphism'],
+  'neo-brutalism': ['네오 브루탈리즘', 'Neo-brutalism'],
+  glassmorphism: ['리퀴드 글래스', 'Glassmorphism'],
+} as const
 
 export function AppearanceSettings({ uid }: { uid: string }) {
   const { theme, themeStyle } = useAppSettings()
   const t = useT()
-  const [saving, setSaving] = useState(false)
-  const [failed, setFailed] = useState(false)
-  const latestRequest = useRef(0)
-
-  async function pick(patch: Partial<Appearance>) {
-    const request = ++latestRequest.current
-    setSaving(true)
-    setFailed(false)
-    try {
-      // Firestore의 로컬 스냅샷이 화면에 즉시 반영되고, 거절되면 원래 값으로 복원된다.
-      await saveSettings(uid, patch)
-    } catch {
-      if (request === latestRequest.current) setFailed(true)
-    } finally {
-      if (request === latestRequest.current) setSaving(false)
-    }
-  }
+  const { save: pick, saving, failed, retry } = useSettingsMutation(uid)
 
   return (
     <section className="appearance-settings" aria-label={t('화면 꾸미기', 'Appearance')} aria-busy={saving}>
@@ -61,7 +44,7 @@ export function AppearanceSettings({ uid }: { uid: string }) {
                   <span className="sample-task sample-urgent"><span>{t('오늘 마감', 'Due today')}</span><i /></span>
                   <span className="sample-nav"><i /><i /><i /></span>
                 </span>
-                <span className="theme-name">{NAMES[style]}<span className="theme-check" aria-hidden="true">✓</span></span>
+                <span className="theme-name">{t(NAMES[style][0], NAMES[style][1])}<span className="theme-check" aria-hidden="true">✓</span></span>
               </span>
             </label>
           ))}
@@ -69,9 +52,10 @@ export function AppearanceSettings({ uid }: { uid: string }) {
       </fieldset>
       <p className={`appearance-status${failed ? ' error' : ''}`} role={failed ? 'alert' : 'status'}>
         {failed
-          ? t('저장하지 못했다. 연결을 확인하고 다시 선택해 주세요.', 'Could not save. Check your connection and select again.')
-          : saving ? t('저장 중…', 'Saving…') : t('테마는 같은 계정의 기기에 동기화된다.', 'Your theme syncs across devices on this account.')}
+          ? t('테마를 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.', 'Could not save the theme. Check your connection and try again.')
+          : saving ? t('기기에 적용했어요. 서버에 저장하는 중이에요…', 'Applied on this device. Waiting to sync…') : t('테마는 같은 계정의 다른 기기에도 적용돼요.', 'Your theme syncs across devices on this account.')}
       </p>
+      {failed && <button className="act" onClick={() => void retry()}>{t('다시 시도', 'Retry')}</button>}
     </section>
   )
 }

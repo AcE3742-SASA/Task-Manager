@@ -68,7 +68,7 @@ function collectionSnapshot(target: Ref) {
   const prefix = target.path + '/'
   const docs = Object.keys(store).filter(path => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
     .map(path => snapshot(ref({}, [path])))
-  return { docs, size: docs.length, empty: docs.length === 0 }
+  return { docs, size: docs.length, empty: docs.length === 0, metadata: { fromCache: false, hasPendingWrites: false } }
 }
 export const getDocs = async (target: Ref) => collectionSnapshot(target)
 type Snapshot = ReturnType<typeof snapshot> | ReturnType<typeof collectionSnapshot>
@@ -112,3 +112,7 @@ export function runTransaction<T>(_db: unknown, operation: (tx: ReturnType<typeo
   queue = result.then(() => {}, () => {})
   return result
 }
+
+// 데모 데이터만 반환한다. 실제 서버·오프라인 동작의 검증은 아니다.
+export const getDocFromServer = getDoc
+export const getDocsFromServer = getDocs

@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
-import { EmptyState } from '../components/EmptyState'
 import { TaskRow } from '../components/TaskRow'
-import { IconList } from '../components/icons'
 import { GROUPS, groupOf, kstToday, snoozeDue } from '../lib/due'
 import type { Group } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useSubjects } from '../lib/subjects'
 import { snoozeTask, toggleDone, toggleFocus, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
+import { readGuideStatus, saveGuideStatus } from '../lib/onboarding'
+import { useNow } from '../lib/useNow'
+import '../styles/onboarding.css'
 
 const DATE = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul',
@@ -56,14 +57,15 @@ function readCollapsed(): Set<string> {
 }
 
 export function List({ uid }: { uid: string }) {
-  const { tasks, loading, error } = useTasks(uid)
+  const { tasks, loading, error, fromCache } = useTasks(uid)
   const { subjects } = useSubjects(uid)
   const navigate = useNavigate()
   const t = useT()
   const [collapsed, setCollapsed] = useState(readCollapsed)
+  const [guideDismissed, setGuideDismissed] = useState(() => readGuideStatus(uid) !== null)
+  const showGuide = !guideDismissed && !fromCache
 
-  // 렌더 시점에 읽는다. 자정 타이머는 두지 않는다 — 앱을 다시 열면 맞는다.
-  const now = new Date()
+  const now = useNow()
   const today = kstToday(now)
   const byId = new Map(subjects.map((s) => [s.id, s]))
 
@@ -90,16 +92,30 @@ export function List({ uid }: { uid: string }) {
     <Screen title={t('할 일', 'To-do')} aside={`${stamp(now)}\n${WEEKDAY.format(now)}`}>
       {error && (
         <div className="form">
-          <div className="hint">{error}</div>
+          <div className="hint" role="alert">
+            {t('할 일을 불러오지 못했어요. 연결을 확인하고 다시 시도해 주세요.', 'Could not load your tasks. Check your connection and try again.')}
+            <button className="guide-link" onClick={() => window.location.reload()}>{t('다시 불러오기', 'Reload')}</button>
+          </div>
         </div>
       )}
 
+      {!error && loading && tasks.length === 0 && <p className="list-loading" role="status">{t('할 일을 불러오고 있어요…', 'Loading your tasks…')}</p>}
+
       {!error && !loading && tasks.length === 0 && (
-        <EmptyState
-          icon={<IconList />}
-          title={t('아직 등록된 할 일이 없다', 'Nothing here yet')}
-          body={t('과제를 등록하면 오늘 · 내일 · 7일 내 · 나중 순으로 여기 쌓인다.', 'Added tasks stack up here as Today, Tomorrow, Next 7 days, Later.')}
-        />
+        <section className="welcome" aria-labelledby="welcome-title">
+          <h2 id="welcome-title">{showGuide ? t('할 일 하나부터 시작해 보세요', 'Start with one task') : t('표시할 할 일이 없어요', 'No tasks to show')}</h2>
+          <p>{t('과목이 없어도 바로 기록할 수 있어요. 저장한 할 일은 기한에 따라 이곳에 모여요.', 'You can add a task without a subject. Saved tasks appear here, grouped by due date.')}</p>
+          <div className="guide-actions">
+            <Link className="bigbtn" to="/new">{showGuide ? t('첫 할 일 추가', 'Add your first task') : t('할 일 추가', 'Add a task')}</Link>
+            <div className="welcome-options">
+              <Link className="guide-link" to="/help">{t('사용 방법 보기', 'See how it works')}</Link>
+              {showGuide && <button className="guide-link" onClick={() => {
+                saveGuideStatus(uid, 'skipped')
+                setGuideDismissed(true)
+              }}>{t('안내 건너뛰기', 'Skip the guide')}</button>}
+            </div>
+          </div>
+        </section>
       )}
 
       {grouped.map(({ group, items }) => {

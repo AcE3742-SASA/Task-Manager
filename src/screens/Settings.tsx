@@ -3,14 +3,16 @@ import { Screen } from '../components/Screen'
 import { SubjectIcon } from '../components/subject-icons'
 import { IconArrow } from '../components/icons'
 import { useT } from '../lib/i18n'
-import { saveNotify, saveSettings, useAppSettings } from '../lib/settings'
+import { useSettingsMutation, useAppSettings } from '../lib/settings'
 import {
-  isSubscribedHere,
+  getPushStatus,
+  sendTestPush,
   permission,
   pushSupported,
   subscribeThisDevice,
   unsubscribeThisDevice,
 } from '../lib/push'
+import type { PushStatus } from '../lib/push'
 import { APP_VERSION } from '../lib/version'
 import { AppearanceSettings } from '../components/AppearanceSettings'
 import { LiquidSurface } from '../components/LiquidSurface'
@@ -77,6 +79,7 @@ function ToggleRow<T extends string | number>({
       tabIndex={0}
       onClick={flip}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
           flip()
@@ -139,6 +142,7 @@ function SelectRow({
       tabIndex={0}
       onClick={open}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
           open()
@@ -169,52 +173,92 @@ function SelectRow({
   )
 }
 
-/**
- * 구독 여부는 Firestore 가 아니라 이 브라우저의 PushManager 가 진실이다.
- * 기기마다 다르므로 설정 문서에 담지 않는다.
- */
+/** 로컬 권한과 현재 계정의 서버 등록을 함께 확인한다. */
 function useThisDevice(uid: string) {
-  const [on, setOn] = useState(false)
+  const [status, setStatus] = useState<PushStatus | null>(null)
   const [perm, setPerm] = useState(permission())
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
-    // serviceWorker.ready / getSubscription 은 reject 할 수 있다 — 구독 여부를
-    // 못 읽었으면 켜져 있다고 우길 근거가 없으니 꺼짐으로 본다.
-    void isSubscribedHere().then(setOn).catch(() => setOn(false))
-  }, [])
+    let active = true
+    setStatus(null)
+    setBusy(true)
+    setErr(null)
+    void getPushStatus(uid).then((next) => { if (active) setStatus(next) })
+      .catch(() => { if (active) setErr('status-failed') })
+      .finally(() => { if (active) setBusy(false) })
+    return () => { active = false }
+  }, [uid])
+
+  async function refresh() {
+    setBusy(true)
+    setErr(null)
+    try { setStatus(await getPushStatus(uid)) }
+    catch { setErr('status-failed') }
+    finally { setPerm(permission()); setBusy(false) }
+  }
 
   async function toggle() {
+    if (busy) return
     setBusy(true)
     setErr(null)
     try {
-      if (on) {
+      if (status === 'on') {
         await unsubscribeThisDevice(uid)
-        setOn(false)
+        setStatus('off')
       } else {
         await subscribeThisDevice(uid)
-        setOn(true)
+        setStatus(await getPushStatus(uid))
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'failed')
+      // 해제는 로컬부터 진행하므로 실패 뒤에 예전 '켜짐'을 유지하지 않는다.
+      setStatus(null)
     } finally {
       setPerm(permission())
       setBusy(false)
     }
   }
-
-  return { on, perm, busy, err, toggle }
+  return { status, perm, busy, err, toggle, refresh }
 }
 
 export function Settings({ uid }: { uid: string }) {
   const t = useT()
-  const { weekStartsOn, lang, notify } = useAppSettings()
+  const { weekStartsOn, lang, notify, settingsStatus } = useAppSettings()
+  const changes = useSettingsMutation(uid)
+  const [testing, setTesting] = useState(false)
+  const [testMessage, setTestMessage] = useState<string | null>(null)
+  const [testFailed, setTestFailed] = useState(false)
   const dev = useThisDevice(uid)
+
+  async function testNotification() {
+    if (testing) return
+    setTesting(true)
+    setTestMessage(null)
+    setTestFailed(false)
+    try {
+      await sendTestPush(uid)
+      setTestMessage(t('발송 요청이 접수됐어요. 이 기기에 알림이 도착했는지 확인해 주세요.', 'Push service accepted the request. Check that the notification arrives on this device.'))
+    } catch (error) {
+      setTestFailed(true)
+      const code = error instanceof Error ? error.message : ''
+      setTestMessage(code === 'rate-limited'
+        ? t('잠시 후 다시 시도해 주세요. 테스트 알림은 1분에 한 번, 하루 10번까지 보낼 수 있어요.', 'Try later. Test notifications are limited to once per minute and ten per day.')
+        : t('테스트 알림을 보내지 못했어요. 기기 알림 연결을 확인한 뒤 다시 시도해 주세요.', 'Could not send a test notification. Check the device connection and try again.'))
+    } finally { setTesting(false) }
+  }
 
   return (
     <Screen title={t('설정', 'Settings')} aside={`v${APP_VERSION}`}>
-      <div className="rows">
+      <div className="rows" aria-busy={changes.saving}>
+        {settingsStatus.readError && <p className="rows-note" role="alert">{t('설정을 불러오지 못했어요. 화면의 설정이 최신 상태가 아닐 수 있어요. 연결을 확인한 뒤 앱을 다시 열어 주세요.', 'Could not load settings. These values may be out of date. Check your connection and reopen the app.')}</p>}
+        {(changes.saving || changes.failed) && <div className="rows-note" role={changes.failed ? 'alert' : 'status'}>
+          {changes.failed
+            ? t('설정을 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.', 'Could not save settings. Check your connection and try again.')
+            : t('설정을 서버에 저장하는 중이에요. 연결이 끊겼다면 다시 연결되면 저장돼요.', 'Waiting to sync settings. If disconnected, they will sync when the connection returns.')}
+          {changes.failed && <button className="act" onClick={() => void changes.retry()}>{t('다시 시도', 'Retry')}</button>}
+        </div>}
         <div
           className="row"
           role="button"
@@ -224,6 +268,7 @@ export function Settings({ uid }: { uid: string }) {
             if (!dev.busy && pushSupported()) void dev.toggle()
           }}
           onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return
             if ((e.key === 'Enter' || e.key === ' ') && !dev.busy && pushSupported()) {
               e.preventDefault()
               void dev.toggle()
@@ -235,33 +280,44 @@ export function Settings({ uid }: { uid: string }) {
           <span className="rl">
             <b>{t('이 기기로 알림 받기', 'Notify this device')}</b>
             <em>
-              {dev.err === 'unsupported' || dev.perm === 'unsupported'
-                ? t('홈 화면에 추가한 뒤 다시 시도', 'Add to Home Screen, then retry')
-                : dev.err === 'denied' || dev.perm === 'denied'
-                  ? t('브라우저 설정에서 허용해야 한다', 'Allow it in browser settings')
-                  : dev.err === 'nokey'
-                    ? t('VAPID 키가 설정되지 않았다', 'VAPID key is missing')
+              {dev.busy
+                ? t('알림 연결 확인 중…', 'Checking notification connection…')
+                : dev.err === 'unsupported' || dev.perm === 'unsupported'
+                  ? t('iPhone은 홈 화면에 추가한 뒤 다시 시도해 주세요.', 'On iPhone, add to Home Screen and retry.')
+                  : dev.err === 'denied' || dev.perm === 'denied'
+                    ? t('브라우저 설정에서 알림을 허용해 주세요.', 'Allow notifications in browser settings.')
                     : dev.err
-                      ? t('실패했다. 다시 시도해 보자', 'Failed. Try again')
-                      : dev.on
-                        ? t('켜짐', 'On')
-                        : t('꺼짐', 'Off')}
+                      ? t('연결을 확인하지 못했어요. 다시 확인해 주세요.', 'Could not verify the connection. Check again.')
+                      : dev.status === 'on'
+                        ? t('이 계정과 기기의 연결을 확인했어요.', 'This device is connected to your account.')
+                        : dev.status === 'reconnect'
+                          ? t('이 계정으로 알림을 다시 연결해 주세요.', 'Reconnect notifications for this account.')
+                          : t('알림이 꺼져 있어요.', 'Notifications are off.')}
+
             </em>
           </span>
           <span className="seg">
             <button
-              className={dev.on ? 'on' : ''}
-              aria-pressed={dev.on}
+              className={dev.status === 'on' ? 'on' : ''}
+              aria-pressed={dev.status === 'on'}
               disabled={dev.busy || !pushSupported()}
               onClick={(e) => {
                 e.stopPropagation()
                 void dev.toggle()
               }}
             >
-              {dev.on ? t('끄기', 'OFF') : t('켜기', 'ON')}
+              {dev.status === 'on' ? t('끄기', 'OFF') : t('켜기', 'ON')}
             </button>
           </span>
         </div>
+
+        {dev.err && <button className="act" disabled={dev.busy} onClick={() => void dev.refresh()}>{t('연결 다시 확인', 'Check connection again')}</button>}
+        <button className="row" disabled={dev.busy || testing || dev.status !== 'on'} onClick={() => void testNotification()}>
+          <SubjectIcon id="bell" />
+          <span className="rl"><b>{testing ? t('테스트 알림 보내는 중…', 'Sending test notification…') : t('테스트 알림 보내기', 'Send a test notification')}</b>
+            <em>{t('이 기기에 실제로 도착하는지 확인해 보세요.', 'Check that this device receives the notification.')}</em></span>
+        </button>
+        {testMessage && <p className="rows-note" role={testFailed ? 'alert' : 'status'}>{testMessage}</p>}
 
         <SelectRow
           icon="coffee"
@@ -270,7 +326,7 @@ export function Settings({ uid }: { uid: string }) {
           value={notify.morningHour}
           label={t('아침 알림 시각', 'Morning notification time')}
           options={hourOpts(t('끔', 'Off'))}
-          onPick={(v) => void saveNotify(uid, { morningHour: v })}
+          onPick={(v) => void changes.save({ notify: { morningHour: v } })}
         />
 
         <SelectRow
@@ -280,7 +336,7 @@ export function Settings({ uid }: { uid: string }) {
           value={notify.eveningHour}
           label={t('저녁 알림 시각', 'Evening notification time')}
           options={hourOpts(t('끔', 'Off'))}
-          onPick={(v) => void saveNotify(uid, { eveningHour: v })}
+          onPick={(v) => void changes.save({ notify: { eveningHour: v } })}
         />
 
         <SelectRow
@@ -297,15 +353,14 @@ export function Settings({ uid }: { uid: string }) {
             { v: 6, label: t('6시간 전', '6h before') },
             { v: 12, label: t('12시간 전', '12h before') },
           ]}
-          onPick={(v) => void saveNotify(uid, { soonBefore: v })}
+          onPick={(v) => void changes.save({ notify: { soonBefore: v } })}
         />
 
-        {/* 알림은 매시 정각의 서버 크론으로 나간다. 그 크론(GitHub Actions)이
-            밀리는 일이 잦아, 도착이 20분쯤 늦을 수 있음을 미리 알린다. */}
+        {/* 예약 발송과 기기 수신 시각은 다르며, 지연 상한을 보장하지 않는다. */}
         <p className="rows-note">
           {t(
-            '알림은 서버 일정에 따라 정시보다 20분 정도 늦게 도착할 수 있다.',
-            'Notifications may arrive up to about 20 minutes late, depending on server scheduling.',
+            '예약 알림은 서버와 기기 연결 상태에 따라 늦어지거나 누락될 수 있어요. 테스트 알림으로 이 기기의 연결을 확인해 보세요.',
+            'Scheduled notifications can be delayed or missed depending on the server and device connection. Use a test notification to check this device.',
           )}
         </p>
 
@@ -318,7 +373,7 @@ export function Settings({ uid }: { uid: string }) {
             { v: 1 as const, label: t('월', 'Mon') },
             { v: 0 as const, label: t('일', 'Sun') },
           ]}
-          onPick={(v) => saveSettings(uid, { weekStartsOn: v })}
+          onPick={(v) => void changes.save({ weekStartsOn: v })}
         />
 
         <ToggleRow
@@ -330,7 +385,7 @@ export function Settings({ uid }: { uid: string }) {
             { v: 'ko' as const, label: '한국어' },
             { v: 'en' as const, label: 'EN' },
           ]}
-          onPick={(v) => saveSettings(uid, { lang: v })}
+          onPick={(v) => void changes.save({ lang: v })}
         />
 
         <AppearanceSettings uid={uid} />

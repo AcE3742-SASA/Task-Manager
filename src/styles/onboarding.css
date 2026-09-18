@@ -1,0 +1,76 @@
+.guide,
+.welcome {
+  padding: 24px var(--gut) 32px;
+  color: var(--ink);
+}
+
+.welcome h2,
+.guide-steps h2 {
+  font-family: var(--disp);
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+}
+
+.welcome h2 { font-size: 21px; }
+.guide-steps h2 { font-size: 17px; }
+
+.welcome p,
+.guide p {
+  font-size: 14px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.welcome p { margin-top: 10px; }
+.guide-intro { margin-bottom: 26px; }
+.guide-note { color: var(--muted); }
+
+.guide-steps {
+  list-style: decimal;
+  padding-left: 26px;
+}
+
+.guide-steps li { padding-left: 5px; margin-bottom: 26px; }
+.guide-steps li::marker { color: var(--ink); font-weight: 400; }
+.guide-steps p { margin-top: 8px; }
+
+.guide-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.guide-actions .bigbtn {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.guide-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.welcome-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+}
+
+.list-loading {
+  padding: 24px var(--gut);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.nav a span { font-size: 10px; letter-spacing: 0; }

@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { SubjectBadge } from './SubjectBadge'
-import { formatDue } from '../lib/due'
+import { useTaskFeedback } from './TaskFeedback'
+import { formatDue, kstToday, snoozeDue, toLocalInput } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useAppSettings } from '../lib/settings'
 import { LiquidSurface } from './LiquidSurface'
@@ -18,8 +18,8 @@ type Props = {
   focused: boolean
   onOpen: () => void
   onToggle: () => Promise<void>
-  onSnooze: () => void
-  onFocus: () => void
+  onSnooze: () => Promise<() => Promise<void>>
+  onFocus: () => Promise<void>
 }
 
 const Check = () => (
@@ -65,23 +65,10 @@ export function TaskRow({
 }: Props) {
   const { lang } = useAppSettings()
   const t = useT()
-  const [saving, setSaving] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const { busy: saving, run } = useTaskFeedback()
   const due = formatDue(task.due, now, task.done, lang)
   const cls = ['task', task.done && 'done', !task.done && urgent && 'urgent'].filter(Boolean).join(' ')
 
-  async function handleToggle() {
-    if (saving) return
-    setSaving(true)
-    setFailed(false)
-    try {
-      await onToggle()
-    } catch {
-      setFailed(true)
-    } finally {
-      setSaving(false)
-    }
-  }
 
   return (
     <>
@@ -106,7 +93,8 @@ export function TaskRow({
       {!task.done && (
         <button
           className={`pin${focused ? ' on' : ''}`}
-          onClick={onFocus}
+          onClick={() => void run(onFocus)}
+          disabled={saving}
           aria-pressed={focused}
           aria-label={
             focused
@@ -117,14 +105,17 @@ export function TaskRow({
           <Pin />
         </button>
       )}
-      {!task.done && (
-        <button className="snooze" onClick={onSnooze} aria-label={t('하루 미루기', 'Postpone a day')}>
+      {!task.done && task.due && (
+        <button className="snooze" disabled={saving}
+          onClick={() => void run(onSnooze, t(`기한을 ${toLocalInput(snoozeDue(task.due, now)).replace('T', ' ')}로 바꿨어요.`, `Due date changed to ${toLocalInput(snoozeDue(task.due, now)).replace('T', ' ')} (KST).`))}
+          aria-label={kstToday(task.due) < kstToday(now) ? t('기한을 내일로 변경', 'Move due date to tomorrow') : t('기한 하루 늦추기', 'Move due date one day later')}
+          title={t('기한을 변경해요. 시각은 그대로 유지해요.', 'Changes the due date and keeps its time.')}>
           <Snooze />
         </button>
       )}
       <button
         className="box"
-        onClick={handleToggle}
+        onClick={() => void run(onToggle)}
         disabled={saving}
         aria-busy={saving}
         aria-label={task.done ? t('완료 취소', 'Mark not done') : t('완료', 'Mark done')}
@@ -132,11 +123,6 @@ export function TaskRow({
         {task.done && <Check />}
       </button>
     </div>
-    {failed && (
-      <p className="task-action-error" role="alert">
-        {t('완료 상태를 저장하지 못했다. 연결을 확인하고 다시 시도해 주세요.', 'Could not save completion. Check your connection and try again.')}
-      </p>
-    )}
     </>
   )
 }

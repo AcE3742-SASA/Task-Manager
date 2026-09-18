@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import { createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
+import { CacheFirst } from 'workbox-strategies'
 
 declare const self: ServiceWorkerGlobalScope
 
@@ -15,6 +16,13 @@ declare const self: ServiceWorkerGlobalScope
 self.skipWaiting()
 precacheAndRoute(self.__WB_MANIFEST)
 
+// 선택하지 않은 테마의 서체까지 설치 때 받지 않는다. 한 번 사용한 서체는 오프라인에서도 재사용한다.
+// 서체 파일을 같은 이름으로 교체할 때는 cacheName의 버전을 올린다.
+registerRoute(
+  ({ url }) => url.origin === self.location.origin && /^\/fonts\/.*\.woff2?$/.test(url.pathname),
+  new CacheFirst({ cacheName: 'sasa-fonts-v1' }),
+)
+
 /**
  * SPA 라우팅. denylist 가 이 파일에서 제일 중요한 줄이다.
  * /__/auth/ 는 vercel.json 이 Firebase 로 프록시하는 로그인 핸들러다.
@@ -27,7 +35,7 @@ registerRoute(
   }),
 )
 
-type Payload = { title: string; body: string; screen: string }
+type Payload = { title: string; body: string; screen: string; deliveryId?: string }
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim())
@@ -43,16 +51,16 @@ self.addEventListener('push', (event) => {
     // 아예 안 띄우면 브라우저가 경고를 대신 띄우지만, 가짜 알림보다는 낫다.
     return
   }
-  event.waitUntil(
-    self.registration.showNotification(p.title, {
+  const options: NotificationOptions & { renotify: boolean } = {
       body: p.body,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      // 같은 종류가 쌓이지 않게 한다. 어제 저녁 알림이 남아 있으면 덮어쓴다.
-      tag: p.screen,
+      // 결과 불명으로 재시도한 같은 발송은 알림함에서 교체한다. 구버전 payload도 지원한다.
+      tag: typeof p.deliveryId === 'string' && /^[a-f0-9]{64}$/.test(p.deliveryId) ? p.deliveryId : p.screen,
+      renotify: false,
       data: { screen: p.screen },
-    }),
-  )
+  }
+  event.waitUntil(self.registration.showNotification(p.title, options))
 })
 
 self.addEventListener('notificationclick', (event) => {

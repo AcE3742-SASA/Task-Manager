@@ -15,7 +15,7 @@ export function TaskEdit({ uid }: { uid: string }) {
     return (
       <Screen title={t('할 일', 'Task')}>
         <div className="form">
-          <div className="hint">{error ?? t('불러오는 중…', 'Loading…')}</div>
+          <div className="hint" role={error ? 'alert' : 'status'}>{error ? t('할 일을 불러오지 못했어요. 연결을 확인하고 다시 열어 주세요.', 'Could not load this task. Check your connection and reopen it.') : t('불러오고 있어요…', 'Loading…')}</div>
         </div>
       </Screen>
     )
@@ -28,7 +28,7 @@ export function TaskEdit({ uid }: { uid: string }) {
       <Screen title={t('할 일', 'Task')}>
         <div className="form">
           <div className="hint">
-            {t('없는 할 일이다. 이미 지웠을 수 있다.', 'No such task. It may already be deleted.')}
+            {t('이 할 일을 찾을 수 없어요. 이미 삭제됐을 수 있어요.', 'No such task. It may already be deleted.')}
           </div>
         </div>
       </Screen>

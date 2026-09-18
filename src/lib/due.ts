@@ -140,14 +140,16 @@ export function todayEnd(now: Date): Date {
 }
 
 /**
- * "미루기" — 기한을 하루 뒤 23:59 로 민다.
+ * 기한을 하루 뒤로 옮기되, 사용자가 정한 시각은 유지한다.
  * 기준일은 오늘과 기존 기한 중 늦은 쪽이라, 지난 · 오늘 마감은 내일로 뛰고
- * 앞으로 남은 기한은 딱 하루씩만 밀린다. 기한이 없던 할일은 내일 마감이 된다.
+ * 앞으로 남은 기한은 딱 하루씩만 밀린다. 기한 없는 항목에는 사용하지 않는다.
  */
 export function snoozeDue(due: Date | null, now: Date): Date {
-  const base = due && kstDayNumber(due) > kstDayNumber(now) ? due : now
+  if (!due) throw new Error('먼저 기한을 정해 주세요.')
+  const base = kstDayNumber(due) > kstDayNumber(now) ? due : now
   const p = kstParts(base)
-  return fromKst(p.y, p.m, p.d + 1, 23, 59)
+  const time = kstParts(due)
+  return fromKst(p.y, p.m, p.d + 1, time.h, time.min)
 }
 
 /** 반복 주기. 'none' 은 한 번 하고 끝나는 평범한 할일이다. */

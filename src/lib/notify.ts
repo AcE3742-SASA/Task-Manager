@@ -83,13 +83,12 @@ export function countDue(dues: Date[], now: Date): DueCounts {
 /**
  * 지금 실행에서 "곧 마감" 알림에 걸릴 미완료 과제 수.
  *
- * 각 과제는 마감이 지금으로부터 정확히 leadHours 시간(정각 버킷) 뒤일 때 딱 한 번
- * 걸린다 — cron 이 매시 정각에 도는 것에 맞춰, 별도의 "이미 알림 보냄" 상태를
- * Firestore 에 쌓지 않고도 과제당 정확히 한 번만 발송되게 한다.
+ * 각 과제는 마감이 기준 정각에서 leadHours 시간(정각 버킷) 뒤일 때 선택된다.
+ * 중복 억제와 지연 복구는 서버의 notificationDeliveries 기록이 담당한다.
  *
  * 정각 버킷 기준이라 마감 23:59 짜리를 leadHours=2 로 두면 21시 실행에 걸리고,
  * 실제 여유는 leadHours ~ leadHours+1 시간이다(늦기보다 이르게 알린다).
- * cron 이 통째로 걸러지면 그 시간의 과제는 놓친다 — 설계상 수용한 지연이다.
+ * 서버는 놓친 정각을 최대90분 동안 다시 평가한다.
  * 완료 여부·null 마감 거르기는 호출부(서버)가 이미 처리해 dues 로 넘긴다.
  */
 export function countDueSoon(dues: Date[], now: Date, leadHours: number): number {
@@ -115,9 +114,9 @@ export function notifyCopy(kind: NotifyKind, lang: Lang, counts: DueCounts): Cop
     }
   }
   return {
-    title: ko ? '할일 정리' : 'Wrap up',
+    title: ko ? '할 일 정리' : 'Wrap up',
     body: ko
-      ? '오늘 받은 과제, 지금 넣어두자.'
+      ? '오늘 받은 과제를 잊기 전에 기록해 두세요.'
       : "Add today's assignments before you forget.",
     screen: '/new',
   }
@@ -128,11 +127,11 @@ export function notifyCopy(kind: NotifyKind, lang: Lang, counts: DueCounts): Cop
  * 건너뛰므로(사건 알림이라 조용한 게 맞다) 여기서 0 을 다루지 않는다.
  * 탭하면 List 로 보낸다.
  */
-export function dueSoonCopy(lang: Lang, count: number, leadHours: number): Copy {
+export function dueSoonCopy(lang: Lang, count: number): Copy {
   const ko = lang !== 'en'
   return {
     title: ko ? '곧 마감' : 'Due soon',
-    body: ko ? `${leadHours}시간 안에 마감 ${count}건` : `${count} due within ${leadHours}h`,
+    body: ko ? `마감이 가까운 할 일 ${count}건` : `${count} tasks due soon`,
     screen: '/',
   }
 }

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useNow } from '../lib/useNow'
+import { useTaskFeedback } from './TaskFeedback'
 import { useNavigate } from 'react-router-dom'
 import { formatDue, kstToday } from '../lib/due'
 import { useT } from '../lib/i18n'
@@ -46,10 +48,9 @@ export function FocusDock({ uid }: { uid: string }) {
   const { lang } = useAppSettings()
   const t = useT()
   const [min, setMin] = useState(readMin)
-  const [saving, setSaving] = useState<Set<string>>(() => new Set())
-  const [failedTask, setFailedTask] = useState<string | null>(null)
+  const { busy, run } = useTaskFeedback()
 
-  const now = new Date()
+  const now = useNow()
   const today = kstToday(now)
   const byId = new Map(subjects.map((s) => [s.id, s]))
 
@@ -60,23 +61,6 @@ export function FocusDock({ uid }: { uid: string }) {
   if (picked.length === 0) return null
 
   const done = picked.filter((x) => x.done).length
-
-  async function handleDone(task: Task) {
-    if (saving.has(task.id)) return
-    setSaving((ids) => new Set(ids).add(task.id))
-    setFailedTask(null)
-    try {
-      await toggleDone(uid, task)
-    } catch {
-      setFailedTask(task.title)
-    } finally {
-      setSaving((ids) => {
-        const next = new Set(ids)
-        next.delete(task.id)
-        return next
-      })
-    }
-  }
 
   function toggle() {
     setMin((v) => {
@@ -110,9 +94,9 @@ export function FocusDock({ uid }: { uid: string }) {
                 <div className={`dtask${task.done ? ' done' : ''}`} key={task.id}>
                   <button
                     className="dbox"
-                    onClick={() => handleDone(task)}
-                    disabled={saving.has(task.id)}
-                    aria-busy={saving.has(task.id)}
+                    onClick={() => void run(() => toggleDone(uid, task))}
+                    disabled={busy}
+                    aria-busy={busy}
                     aria-label={task.done ? t('완료 취소', 'Mark not done') : t('완료', 'Mark done')}
                   >
                     {task.done && <Check />}
@@ -126,7 +110,8 @@ export function FocusDock({ uid }: { uid: string }) {
                   </button>
                   <button
                     className="dx"
-                    onClick={() => toggleFocus(uid, task, today)}
+                    onClick={() => void run(() => toggleFocus(uid, task, today))}
+                    disabled={busy}
                     aria-label={t('오늘 목록에서 빼기', 'Remove from today’s list')}
                   >
                     ×
@@ -135,11 +120,6 @@ export function FocusDock({ uid }: { uid: string }) {
               )
             })}
           </div>
-        )}
-        {failedTask !== null && (
-          <p className="dock-action-error" role="alert">
-            {t(`‘${failedTask}’ 완료 상태를 저장하지 못했다. 연결을 확인하고 다시 시도해 주세요.`, `Could not save completion for “${failedTask}”. Check your connection and try again.`)}
-          </p>
         )}
       </section>
     </div>
