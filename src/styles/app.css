@@ -680,6 +680,43 @@
   background: var(--ink);
   opacity: 0.22;
 }
+/* 목록 화면의 제목 줄은 접기 버튼이다 (달력의 .grp 는 그냥 제목이라 그대로 둔다). */
+button.grp {
+  width: 100%;
+  text-align: left;
+  gap: 6px;
+}
+button.grp h2 {
+  margin-right: 3px;
+}
+button.grp .chev {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linecap: square;
+  transition: transform 0.18s var(--ease);
+}
+button.grp .chev.shut {
+  transform: rotate(-90deg);
+}
+/* 접힌 그룹은 조금 물러나 있다. 개수만 남아 몇 개가 숨었는지는 보인다. */
+button.grp[aria-expanded='false'] h2 {
+  opacity: 0.62;
+}
+/* 여러 그룹을 한꺼번에 접으면 제목 줄만 쌓인다 — 그때는 간격을 좁혀 목록처럼 읽힌다. */
+button.grp[aria-expanded='false'] {
+  padding-top: 10px;
+  padding-bottom: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.grp .chev {
+    transition-duration: 1ms;
+  }
+}
 
 .task {
   display: flex;
