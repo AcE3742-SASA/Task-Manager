@@ -2,7 +2,7 @@
 
 v1.5.0은 앱과 푸시 API를 Vercel에 두고, cron-job.org가 `POST /api/notify`를 5분마다 호출하는 구성이다. 호출 빈도와 별개로 알림은 사용자가 선택한 KST 정각과 마감 임박 시간대를 기준으로 보낸다. 기존 GitHub 예약은 새 연결을 확인할 때까지 유지한다.
 
-2026-09-19 로컬 구현·검증을 마쳤고 cron-job.org 작업을 비활성 상태로 생성했다. Vercel Production의 최초 시작 시각을 KST 03:00으로 등록했다. 전용 인증키 연결, 배포, 예약 활성화와 실제 iPhone 수신 확인은 아직 남아 있다. 아래 작업의 완료 여부는 마지막 기록란에 남긴다.
+2026-09-19 v1.5.0 운영 배포와 발송 없는 인증 연결 점검을 완료했다. cron-job.org 작업은 5분 간격으로 활성화했고 최초 알림 처리 시각은 KST 03:00이다. 실제 자동 실행, 기존 GitHub 예약 해제와 iPhone 수신 확인 상태는 마지막 기록란을 따른다.
 
 ## 서비스 제약과 키 관리
 
@@ -94,9 +94,10 @@ cron-job.org 장애가 지속되면 해당 작업을 멈추고 GitHub의 `NOTIFY
 
 ## 운영 확인 기록
 
-- 배포 커밋 / URL: 미완료
-- `CRON_JOB_SECRET`, `NOTIFY_START_AT` 등록과 재배포: 미완료
-- cron-job.org 작업 ID: `8468850` — 5분 간격, POST, 비활성. 발송 없는 점검은 미완료
+- 운영 배포: `baa70f9d7979e5a1d400773c94bd377a8a57cff1`, https://sasa-task-manager.vercel.app/ (KST 2026-09-19 02:29). PR #11 기능 반영 후 PR #12에서 Vercel의 require(ESM) 설정을 보완했다.
+- `CRON_JOB_SECRET` 등록·재배포 완료. `NOTIFY_START_AT=2026-09-18T18:00:00Z` (KST 03:00). 키 값은 문서에 보관하지 않는다.
+- cron-job.org 작업 `8468850`: 5분 간격, POST, 활성. `?check=1` 점검은 KST 02:30:16에 200 OK, 1.79초였고 `sendsNotifications:false`를 확인했다. 점검 후 일반 `/api/notify` URL로 전환했다.
 - 테스트 계정의 예정 / API 실행 / iPhone 수신 시각: 미완료
-- GitHub `NOTIFY_SCHEDULER` 전환 시각: 미완료
+- 첫 자동 실행: KST 2026-09-19 02:35:00 예약, 02:35:10 실행(지연 10.4초), 처리 6.32초, 200 OK. 03:00 이전이므로 설정상 알림 대상 시간대를 처리하기 전 실행이다.
+- GitHub `NOTIFY_SCHEDULER=cron-job.org`: KST 2026-09-19 02:36:25 전환. 정기 실행만 건너뛰며 수동 실행은 유지한다.
 - 실패·복구·자동 중지 알림: 설정 완료. 응답 저장과 3xx 성공 처리는 꺼짐
