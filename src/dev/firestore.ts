@@ -68,7 +68,7 @@ function collectionSnapshot(target: Ref) {
   const prefix = target.path + '/'
   const docs = Object.keys(store).filter(path => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
     .map(path => snapshot(ref({}, [path])))
-  return { docs, size: docs.length, empty: docs.length === 0, metadata: { fromCache: false, hasPendingWrites: false } }
+  return { docs, size: docs.length, empty: docs.length === 0, docChanges: () => docs.map(doc => ({ doc })), metadata: { fromCache: false, hasPendingWrites: false } }
 }
 export const getDocs = async (target: Ref) => collectionSnapshot(target)
 type Snapshot = ReturnType<typeof snapshot> | ReturnType<typeof collectionSnapshot>

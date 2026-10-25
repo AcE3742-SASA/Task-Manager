@@ -7,7 +7,7 @@ import { dateFromDayNumber, dayNumber, kstDate, kstToday, kstYmd, monthGrid, sno
 import { useT } from '../lib/i18n'
 import { useAppSettings } from '../lib/settings'
 import { useSubjects } from '../lib/subjects'
-import { snoozeTask, toggleDone, toggleFocus, useTasks } from '../lib/tasks'
+import { useTaskActions, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
 import { useNow } from '../lib/useNow'
 
@@ -32,6 +32,7 @@ export function isDoubleTap(previous: Tap | null, current: Tap): boolean {
 
 export function Calendar({ uid }: { uid: string }) {
   const { tasks } = useTasks(uid)
+  const { snoozeTask, toggleDone, toggleFocus } = useTaskActions(uid)
   const { subjects } = useSubjects(uid)
   const { weekStartsOn, lang } = useAppSettings()
   const t = useT()
@@ -259,9 +260,9 @@ export function Calendar({ uid }: { uid: string }) {
             urgent={false}
             focused={task.focusDate === todayKey}
             onOpen={() => navigate(`/task/${task.id}`)}
-            onToggle={() => toggleDone(uid, task)}
-            onSnooze={() => snoozeTask(uid, task, snoozeDue(task.due, today))}
-            onFocus={() => toggleFocus(uid, task, todayKey)}
+            onToggle={() => toggleDone(task)}
+            onSnooze={() => snoozeTask(task, snoozeDue(task.due, today))}
+            onFocus={() => toggleFocus(task, todayKey)}
           />
         ))
       )}

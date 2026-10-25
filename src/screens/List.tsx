@@ -6,7 +6,7 @@ import { GROUPS, groupOf, kstToday, snoozeDue } from '../lib/due'
 import type { Group } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useSubjects } from '../lib/subjects'
-import { snoozeTask, toggleDone, toggleFocus, useTasks } from '../lib/tasks'
+import { useTaskActions, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
 import { readGuideStatus, saveGuideStatus } from '../lib/onboarding'
 import { useNow } from '../lib/useNow'
@@ -58,6 +58,7 @@ function readCollapsed(): Set<string> {
 
 export function List({ uid }: { uid: string }) {
   const { tasks, loading, error, fromCache } = useTasks(uid)
+  const { snoozeTask, toggleDone, toggleFocus } = useTaskActions(uid)
   const { subjects } = useSubjects(uid)
   const navigate = useNavigate()
   const t = useT()
@@ -131,7 +132,7 @@ export function List({ uid }: { uid: string }) {
               <span className="rule" />
             </button>
             <div id={id} hidden={shut}>
-              {items.map((task: Task) => (
+              {!shut && items.map((task: Task) => (
                 <TaskRow
                   key={task.id}
                   task={task}
@@ -140,9 +141,9 @@ export function List({ uid }: { uid: string }) {
                   urgent={group === '오늘'}
                   focused={task.focusDate === today}
                   onOpen={() => navigate(`/task/${task.id}`)}
-                  onToggle={() => toggleDone(uid, task)}
-                  onSnooze={() => snoozeTask(uid, task, snoozeDue(task.due, now))}
-                  onFocus={() => toggleFocus(uid, task, today)}
+                  onToggle={() => toggleDone(task)}
+                  onSnooze={() => snoozeTask(task, snoozeDue(task.due, now))}
+                  onFocus={() => toggleFocus(task, today)}
                 />
               ))}
             </div>
