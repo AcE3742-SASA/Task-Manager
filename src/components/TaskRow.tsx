@@ -65,7 +65,8 @@ export function TaskRow({
 }: Props) {
   const { lang } = useAppSettings()
   const t = useT()
-  const { busy: saving, run } = useTaskFeedback()
+  const { busy, run } = useTaskFeedback()
+  const saving = busy(task.id)
   const due = formatDue(task.due, now, task.done, lang)
   const cls = ['task', task.done && 'done', !task.done && urgent && 'urgent'].filter(Boolean).join(' ')
 
@@ -93,7 +94,7 @@ export function TaskRow({
       {!task.done && (
         <button
           className={`pin${focused ? ' on' : ''}`}
-          onClick={() => void run(onFocus)}
+          onClick={() => void run(task.id, onFocus)}
           disabled={saving}
           aria-pressed={focused}
           aria-label={
@@ -107,7 +108,7 @@ export function TaskRow({
       )}
       {!task.done && task.due && (
         <button className="snooze" disabled={saving}
-          onClick={() => void run(onSnooze, t(`기한을 ${toLocalInput(snoozeDue(task.due, now)).replace('T', ' ')}로 바꿨어요.`, `Due date changed to ${toLocalInput(snoozeDue(task.due, now)).replace('T', ' ')} (KST).`))}
+          onClick={() => void run(task.id, onSnooze, t(`기한을 ${toLocalInput(snoozeDue(task.due, now)).replace('T', ' ')}로 바꿨어요.`, `Due date changed to ${toLocalInput(snoozeDue(task.due, now)).replace('T', ' ')} (KST).`))}
           aria-label={kstToday(task.due) < kstToday(now) ? t('기한을 내일로 변경', 'Move due date to tomorrow') : t('기한 하루 늦추기', 'Move due date one day later')}
           title={t('기한을 변경해요. 시각은 그대로 유지해요.', 'Changes the due date and keeps its time.')}>
           <Snooze />
@@ -115,7 +116,7 @@ export function TaskRow({
       )}
       <button
         className="box"
-        onClick={() => void run(onToggle)}
+        onClick={() => void run(task.id, onToggle)}
         disabled={saving}
         aria-busy={saving}
         aria-label={task.done ? t('완료 취소', 'Mark not done') : t('완료', 'Mark done')}

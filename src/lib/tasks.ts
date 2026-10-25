@@ -1,10 +1,11 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import {
   Timestamp,
   addDoc,
   collection,
   deleteDoc,
   doc,
+  getDocFromServer,
   onSnapshot,
   runTransaction,
   serverTimestamp,
@@ -207,7 +208,10 @@ export async function toggleDone(uid: string, task: Task) {
   })
 }
 
-type State = { tasks: Task[]; loading: boolean; error: string | null; pending: boolean; fromCache: boolean }
+type TaskPatch = Partial<Pick<Task, 'done' | 'doneAt' | 'due' | 'focusDate'>>
+type Optimistic = <T>(id: string, patch: TaskPatch, save: () => Promise<T>) => Promise<T>
+type SnapshotState = { tasks: Task[]; loading: boolean; error: string | null; pending: boolean; fromCache: boolean }
+type State = SnapshotState & { optimistic: Optimistic }
 export const TasksContext = createContext<State | null>(null)
 
 export function useTasks(uid: string): State {
@@ -217,49 +221,122 @@ export function useTasks(uid: string): State {
 }
 
 export function useTaskSubscription(uid: string | null): State {
-  const [state, setState] = useState<State>({ tasks: [], loading: true, error: null, pending: false, fromCache: true })
+  const initial: SnapshotState = { tasks: [], loading: true, error: null, pending: false, fromCache: true }
+  const [state, setState] = useState(initial)
+  const session = useRef({ active: false, source: initial, patches: new Map<string, TaskPatch>(), revisions: new Map<string, number>() })
+
+  function publish(current = session.current) {
+    if (!current.active || current !== session.current) return
+    const tasks = current.source.tasks.map(task => {
+      const patch = current.patches.get(task.id)
+      return patch ? { ...task, ...patch } : task
+    }).sort(taskOrder)
+    setState({ ...current.source, tasks, pending: current.source.pending || current.patches.size > 0 })
+  }
+
+  async function optimistic<T>(id: string, patch: TaskPatch, save: () => Promise<T>): Promise<T> {
+    const current = session.current
+    current.patches.set(id, patch)
+    publish(current)
+    try {
+      const result = await save()
+      if (current.active && current === session.current && current.patches.get(id) === patch) {
+        const before = current.source.tasks.find(task => task.id === id)
+        const revision = current.revisions.get(id)
+        // transaction 응답이 실시간 구독보다 먼저 와도 화면이 이전 값으로 돌아가지 않는다.
+        if (before && !matchesPatch(before, patch)) {
+          try {
+            const snapshot = await getDocFromServer(doc(col(uid!), id))
+            const latest = current.source.tasks.find(task => task.id === id)
+            // 조회 중 도착한 새 서버 변경은 값이 원래대로 돌아왔더라도 우선한다.
+            if (current.revisions.get(id) !== revision) return result
+            if (snapshot.exists() && latest) {
+              const confirmed = readTask(id, snapshot.data())
+              const fields = Object.fromEntries(Object.entries(confirmed).filter(([key]) =>
+                sameValue(latest[key as keyof Task], before[key as keyof Task])))
+              current.source = { ...current.source, tasks: current.source.tasks.map(task => task.id === id ? { ...task, ...fields } : task) }
+            } else if (latest === before) {
+              current.source = { ...current.source, tasks: current.source.tasks.filter(task => task.id !== id) }
+            }
+          } catch {
+            // 저장은 성공했다. 조회 연결만 끊겼으면 확인된 변경을 유지하고 구독으로 갱신한다.
+            const latest = current.source.tasks.find(task => task.id === id)
+            if (latest && current.revisions.get(id) === revision) {
+              const fields = Object.fromEntries(Object.entries(patch).filter(([key]) =>
+                sameValue(latest[key as keyof Task], before[key as keyof Task])))
+              current.source = { ...current.source, tasks: current.source.tasks.map(task => task.id === id ? { ...task, ...fields } : task) }
+            }
+          }
+        }
+      }
+      return result
+    } finally {
+      if (current.patches.get(id) === patch) current.patches.delete(id)
+      publish(current)
+    }
+  }
 
   useEffect(() => {
     if (!uid) return
+    const current = { active: true, source: initial, patches: new Map<string, TaskPatch>(), revisions: new Map<string, number>() }
+    session.current = current
+    publish(current)
     if (!db) {
-      setState((s) => ({ ...s, loading: false, error: '서비스 연결 설정을 확인해 주세요.' }))
-      return
+      current.source = { ...current.source, loading: false, error: '서비스 연결 설정을 확인해 주세요.' }
+      publish(current)
+      return () => { current.active = false }
     }
-    return onSnapshot(
+    const unsubscribe = onSnapshot(
       collection(db, 'users', uid, 'tasks'),
       { includeMetadataChanges: true },
       (snap) => {
-        const tasks = snap.docs
-          .map((d) => {
-            const v = d.data()
-            return {
-              id: d.id,
-              title: v.title ?? '',
-              subjectId: v.subjectId ?? null,
-              note: v.note ?? '',
-              due: toDate(v.due),
-              kind: (v.kind ?? '과제') as Kind,
-              repeat: (v.repeat ?? 'none') as Repeat,
-              done: !!v.done,
-              doneAt: toDate(v.doneAt),
-              createdAt: toDate(v.createdAt),
-              // 1.3.0 이전 문서에는 이 필드가 없다.
-              focusDate: v.focusDate ?? null,
-              dueWasDefault: !!v.dueWasDefault,
-              entryMs: v.entryMs ?? 0,
-            }
-          })
-          // 기한 순. 기한 없는 것(미정)은 맨 뒤로. 같은 기한이면 먼저 만든 것이 위로.
-          .sort(
-            (a, b) =>
-              (a.due?.getTime() ?? Infinity) - (b.due?.getTime() ?? Infinity) ||
-              (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0),
-          )
-        setState({ tasks, loading: false, error: null, pending: snap.metadata.hasPendingWrites, fromCache: snap.metadata.fromCache })
+        if (!snap.metadata.fromCache) {
+          for (const { doc } of snap.docChanges()) {
+            if (!doc.metadata.hasPendingWrites) current.revisions.set(doc.id, (current.revisions.get(doc.id) ?? 0) + 1)
+          }
+        }
+        const tasks = snap.docs.map(d => readTask(d.id, d.data()))
+        current.source = { tasks, loading: false, error: null, pending: snap.metadata.hasPendingWrites, fromCache: snap.metadata.fromCache }
+        publish(current)
       },
-      (e) => setState((s) => ({ ...s, loading: false, error: e.message })),
+      (e) => { current.source = { ...current.source, loading: false, error: e.message }; publish(current) },
     )
+    return () => { current.active = false; unsubscribe() }
   }, [uid])
 
-  return state
+  return { ...state, optimistic }
+}
+
+function matchesPatch(task: Task, patch: TaskPatch) {
+  return Object.entries(patch).every(([key, value]) => key === 'doneAt' ||
+    sameValue(task[key as keyof Task], value))
+}
+
+const sameValue = (a: unknown, b: unknown) => a instanceof Date && b instanceof Date ? a.getTime() === b.getTime() : a === b
+
+const taskOrder = (a: Task, b: Task) =>
+  (a.due?.getTime() ?? Infinity) - (b.due?.getTime() ?? Infinity) ||
+  (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0)
+
+function readTask(id: string, v: Record<string, unknown>): Task {
+  return {
+    id, title: (v.title ?? '') as string, subjectId: (v.subjectId ?? null) as string | null,
+    note: (v.note ?? '') as string, due: toDate(v.due), kind: (v.kind ?? '과제') as Kind,
+    repeat: (v.repeat ?? 'none') as Repeat, done: !!v.done, doneAt: toDate(v.doneAt),
+    createdAt: toDate(v.createdAt), focusDate: (v.focusDate ?? null) as string | null,
+    dueWasDefault: !!v.dueWasDefault, entryMs: (v.entryMs ?? 0) as number,
+  }
+}
+
+/** 목록·달력·오늘 할 일 창이 같은 임시 변경을 공유한다. 서버 transaction은 그대로 유지한다. */
+export function useTaskActions(uid: string) {
+  const { optimistic } = useTasks(uid)
+  return {
+    toggleDone: (task: Task) => optimistic(task.id, { done: !task.done, doneAt: task.done ? null : new Date() }, () => toggleDone(uid, task)),
+    toggleFocus: (task: Task, today: string) => optimistic(task.id, { focusDate: task.focusDate === today ? null : today }, () => toggleFocus(uid, task, today)),
+    snoozeTask: (task: Task, next: Date) => optimistic(task.id, { due: next }, async () => {
+      const undo = await snoozeTask(uid, task, next)
+      return () => optimistic(task.id, { due: task.due }, undo)
+    }),
+  }
 }

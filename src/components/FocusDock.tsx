@@ -6,7 +6,7 @@ import { formatDue, kstToday } from '../lib/due'
 import { useT } from '../lib/i18n'
 import { useAppSettings } from '../lib/settings'
 import { useSubjects } from '../lib/subjects'
-import { toggleDone, toggleFocus, useTasks } from '../lib/tasks'
+import { useTaskActions, useTasks } from '../lib/tasks'
 import type { Task } from '../lib/tasks'
 import { LiquidSurface } from './LiquidSurface'
 import { SubjectBadge } from './SubjectBadge'
@@ -43,6 +43,7 @@ function readMin(): boolean {
  */
 export function FocusDock({ uid }: { uid: string }) {
   const { tasks } = useTasks(uid)
+  const { toggleDone, toggleFocus } = useTaskActions(uid)
   const { subjects } = useSubjects(uid)
   const navigate = useNavigate()
   const { lang } = useAppSettings()
@@ -94,9 +95,9 @@ export function FocusDock({ uid }: { uid: string }) {
                 <div className={`dtask${task.done ? ' done' : ''}`} key={task.id}>
                   <button
                     className="dbox"
-                    onClick={() => void run(() => toggleDone(uid, task))}
-                    disabled={busy}
-                    aria-busy={busy}
+                    onClick={() => void run(task.id, () => toggleDone(task))}
+                    disabled={busy(task.id)}
+                    aria-busy={busy(task.id)}
                     aria-label={task.done ? t('완료 취소', 'Mark not done') : t('완료', 'Mark done')}
                   >
                     {task.done && <Check />}
@@ -110,8 +111,8 @@ export function FocusDock({ uid }: { uid: string }) {
                   </button>
                   <button
                     className="dx"
-                    onClick={() => void run(() => toggleFocus(uid, task, today))}
-                    disabled={busy}
+                    onClick={() => void run(task.id, () => toggleFocus(task, today))}
+                    disabled={busy(task.id)}
                     aria-label={t('오늘 목록에서 빼기', 'Remove from today’s list')}
                   >
                     ×
