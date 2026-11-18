@@ -3,6 +3,7 @@ import type { Firestore } from 'firebase-admin/firestore'
 import type { VercelResponse } from '@vercel/node'
 import { runScheduledNotifications } from './scheduled-notifications'
 import { HOUR, hourSlot } from './notification-schedule'
+import type { Notify } from '../lib/notify'
 
 const configure = vi.hoisted(() => vi.fn())
 vi.mock('./push.js', async original => ({ ...await original<typeof import('./push')>(), pushServices: configure }))
@@ -83,7 +84,7 @@ const INITIAL = Date.parse('2026-09-18T12:00:00Z') // 21:00 KST
 let store: Store
 let send: ReturnType<typeof vi.fn<(...args: any[]) => Promise<any>>>
 const subFor = (device: string) => ({ endpoint: `https://web.push.apple.com/${device}`, keys: { p256dh: 'p'.repeat(88), auth: 'a'.repeat(22) }, vapid: 'current' })
-const addUser = (uid: string, devices = ['device'], notify = { morningHour: null as number | null, eveningHour: 21 as number | null, soonBefore: null as number | null }) => {
+const addUser = (uid: string, devices = ['device'], notify: Notify = { morningHour: null, eveningHour: 21, soonBefore: null }) => {
   store.documents.set(`users/${uid}/settings/app`, { notify, lang: 'ko' })
   for (const device of devices) store.documents.set(`users/${uid}/pushSubs/${device}`, subFor(`${uid}-${device}`))
 }
@@ -116,6 +117,92 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); vi.restoreAllMocks() })
 
 describe('scheduled notification processing with atomic storage', () => {
+  it('sends two custom reminders later in an already scanned hour, each once', async () => {
+    addUser('a', ['phone'], { morningHour: null, eveningHour: 21, soonBefore: [0.5, 10 / 60] })
+    store.documents.set('users/a/tasks/open', { done: false, due: { toDate: () => new Date(INITIAL + 59 * 60_000) } })
+    await run()
+    expect(send).toHaveBeenCalledTimes(1) // daily wrap-up at 21:00
+    advance(28)
+    await run()
+    expect(send).toHaveBeenCalledTimes(1)
+    advance(2)
+    await run()
+    expect(send).toHaveBeenCalledTimes(2) // 21:29 reminder caught at 21:30
+    advance(5)
+    await run()
+    expect(send).toHaveBeenCalledTimes(2)
+    advance(15)
+    await run()
+    expect(send).toHaveBeenCalledTimes(3) // separate 21:49 reminder
+    const ids = send.mock.calls.map(call => JSON.parse(call[1]).deliveryId)
+    expect(new Set(ids).size).toBe(3)
+  })
+
+  it('checks newly due reminders while a daily push is waiting for a retry', async () => {
+    addUser('a', ['phone'], { morningHour: null, eveningHour: 21, soonBefore: [0.5] })
+    store.documents.set('users/a/tasks/open', { done: false, due: { toDate: () => new Date(INITIAL + 35 * 60_000) } })
+    send.mockImplementation(async (_sub, payload) => {
+      if (JSON.parse(payload).title === '할 일 정리') throw { statusCode: 503 }
+      return { statusCode: 201 }
+    })
+    await run()
+    advance(5)
+    await run()
+    expect(send.mock.calls.filter(call => JSON.parse(call[1]).title === '곧 마감')).toHaveLength(1)
+  })
+
+  it('finishes a frozen page scan before reopening it for reminders behind the cursor', async () => {
+    for (const uid of ['a', 'b']) {
+      addUser(uid, ['phone'], { morningHour: null, eveningHour: null, soonBefore: [0.5] })
+      store.documents.set(`users/${uid}/tasks/open`, { done: false, due: { toDate: () => new Date(INITIAL + 35 * 60_000) } })
+    }
+    store.documents.set(`notificationRuns/${INITIAL}`, { done: false, cursor: 'users/a/pushSubs/phone', through: INITIAL })
+    advance(10)
+    await run()
+    expect(send).not.toHaveBeenCalled()
+    expect(store.documents.get(`notificationRuns/${INITIAL}`)?.through).toBe(INITIAL)
+    advance(1)
+    await run()
+    expect(send).toHaveBeenCalledTimes(2)
+  })
+
+  it('rechecks legacy completed-hour records for later custom reminders', async () => {
+    addUser('a', ['phone'], { morningHour: null, eveningHour: null, soonBefore: [0.5] })
+    store.documents.set('users/a/tasks/open', { done: false, due: { toDate: () => new Date(INITIAL + 59 * 60_000) } })
+    store.documents.set(`notificationRuns/${INITIAL}`, { done: true })
+    advance(30)
+    await run()
+    expect(send).toHaveBeenCalledTimes(1)
+  })
+
+  it('delivers each selected reminder once across midnight and repeated scheduler runs', async () => {
+    addUser('a', ['phone'], { morningHour: null, eveningHour: null, soonBefore: [1, 3] })
+    const due = { toDate: () => new Date(INITIAL + 3 * HOUR) }
+    store.documents.set('users/a/tasks/open', { done: false, due })
+    store.documents.set('users/a/tasks/completed', { done: true, due })
+    await run()
+    await run()
+    expect(send).toHaveBeenCalledTimes(1)
+    advance(60)
+    await run()
+    expect(send).toHaveBeenCalledTimes(1)
+    advance(60)
+    await run()
+    await run()
+    expect(send).toHaveBeenCalledTimes(2)
+    const payloads = send.mock.calls.map(call => JSON.parse(call[1]))
+    expect(payloads.map(payload => payload.body)).toEqual(['마감이 가까운 할 일 1건', '마감이 가까운 할 일 1건'])
+    expect(payloads[0].deliveryId).not.toBe(payloads[1].deliveryId)
+    expect(receipts()).toHaveLength(2)
+  })
+
+  it('skips task reads and sending when all notification lists are disabled', async () => {
+    addUser('a', ['phone'], { morningHour: null, eveningHour: null, soonBefore: [] })
+    await run()
+    expect(send).not.toHaveBeenCalled()
+    expect(store.queryReads).not.toContain('users/a/tasks')
+  })
+
   it('starts at the configured next hour during migration and retains the saved boundary', async () => {
     vi.stubEnv('NOTIFY_START_AT', '2026-09-18T12:05:00Z')
     addUser('a', ['phone'], { morningHour: null, eveningHour: 22, soonBefore: null })
@@ -147,7 +234,7 @@ describe('scheduled notification processing with atomic storage', () => {
     expect(receipts()[0][1].status).toBe('failed')
   })
 
-  it('deduplicates repeated and concurrent runs and does not rescan a completed hour', async () => {
+  it('deduplicates repeated and concurrent runs while checking for later reminders in the hour', async () => {
     addUser('a', ['phone', 'desktop'])
     const results = await Promise.all([run(), run()])
     expect(results.filter(result => result.busy)).toHaveLength(1)
@@ -156,7 +243,7 @@ describe('scheduled notification processing with atomic storage', () => {
     const scans = store.queryReads.filter(path => path === 'pushSubs').length
     await run()
     expect(send).toHaveBeenCalledTimes(2)
-    expect(store.queryReads.filter(path => path === 'pushSubs')).toHaveLength(scans)
+    expect(store.queryReads.filter(path => path === 'pushSubs').length).toBeGreaterThan(scans)
     expect(receipts().every(([, value]) => value.status === 'sent')).toBe(true)
   })
 

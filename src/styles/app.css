@@ -355,6 +355,46 @@
   stroke-width: 2.2;
   flex: none;
 }
+.row.reminder-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+}
+.reminder-options {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.reminder-options .chip {
+  justify-content: center;
+  min-height: var(--tap);
+  padding-inline: 6px;
+}
+.reminder-custom {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.reminder-custom label {
+  display: block;
+  margin: 4px 0 6px;
+  font-size: 12px;
+}
+.reminder-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto;
+  gap: 8px;
+}
+.reminder-inputs :is(.inp, .hourpick) {
+  min-width: 0;
+  width: 100%;
+  min-height: var(--tap);
+}
+.reminder-inputs .chip { justify-content: center; }
+.reminder-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink);
+}
 .row .tag {
   font-family: var(--pix);
   font-size: 9px;
@@ -1092,12 +1132,13 @@ button.grp[aria-expanded='false'] {
 .month .day {
   border: var(--b2);
   background: var(--paper);
-  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 64px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 4px 0 0;
+  padding: 4px 0;
   font-family: var(--pix);
   font-size: 10.5px;
 }
@@ -1113,11 +1154,12 @@ button.grp[aria-expanded='false'] {
   flex-wrap: wrap;
   gap: 2px;
   justify-content: center;
-  padding: 0 2px;
+  width: 32px;
+  flex-shrink: 0;
 }
 .dots2 i {
-  width: 5px;
-  height: 5px;
+  width: 15px;
+  height: 15px;
   border: 1px solid var(--ink);
 }
 .month .day.on .dots2 i {

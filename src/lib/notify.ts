@@ -17,15 +17,29 @@ export type NotifyKind = 'morning' | 'evening'
 
 /**
  * morningHour·eveningHour: 0~23 시(KST). null 이면 그 알림을 끈다. 정각 트리거다.
- * soonBefore: "곧 마감" 알림의 여유 시간(시). 마감 이 시간 전 정각에 한 번 온다.
- *   null 이면 끈다. 정각(시각)이 아니라 과제 하나하나의 마감을 기준으로 걸리는
+ * soonBefore: 마감 전 간격들(시). 분 단위는 1/60시로 저장하며 이전 숫자 하나도 읽는다.
+ *   null 또는 빈 배열이면 끈다. 과제 하나하나의 마감을 기준으로 걸리는
  *   사건 트리거라 morning·evening 과 성격이 다르다 — pickKinds 가 아니라
- *   countDueSoon 이 판정한다.
+ *   서버가 마감 시각에서 간격을 빼서 예약 시점을 계산한다.
  */
 export type Notify = {
   morningHour: number | null
   eveningHour: number | null
-  soonBefore: number | null
+  soonBefore: number | number[] | null
+}
+
+export const DUE_SOON_HOURS = [1, 2, 3, 6, 12] as const
+export const MAX_REMINDER_HOURS = 365 * 24
+
+export function validReminderHours(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1 / 60 && value <= MAX_REMINDER_HOURS
+    && Math.abs(value * 60 - Math.round(value * 60)) < 1e-7
+}
+
+/** 저장된 단일 값과 여러 값을 같은 방식으로 읽고 중복·잘못된 값을 거른다. */
+export function dueSoonHours(value: unknown): number[] {
+  const values: unknown[] = Array.isArray(value) ? value : [value]
+  return [...new Set(values.filter(validReminderHours).map(hour => Math.round(hour * 60) / 60))].sort((a, b) => a - b)
 }
 
 /**
@@ -44,13 +58,10 @@ const KST_MS = 9 * 3600_000
 export const kstHour = (now: Date) =>
   Math.floor(((now.getTime() + KST_MS) / 3600_000) % 24)
 
-/** 에폭 이후 KST 절대 시(정각 버킷). 자정을 넘겨도 이어지는 시간 차 계산에 쓴다. */
-const kstAbsHour = (t: Date) => Math.floor((t.getTime() + KST_MS) / 3600_000)
-
 /**
  * 지금 시각에 이 사용자가 받아야 할 정각 알림들. 아침이 먼저다.
  * soonBefore 는 여기서 보지 않는다 — 정각이 아니라 과제 마감을 기준으로 걸리므로
- * countDueSoon 이 따로 판정한다. 그래서 이 두 필드만 받는다.
+ * 서버가 마감 시각으로 따로 판정한다. 그래서 이 두 필드만 받는다.
  */
 export function pickKinds(
   hour: number,
@@ -78,26 +89,6 @@ export function countDue(dues: Date[], now: Date): DueCounts {
     else if (n === today + 1) m++
   }
   return { today: t, tomorrow: m }
-}
-
-/**
- * 지금 실행에서 "곧 마감" 알림에 걸릴 미완료 과제 수.
- *
- * 각 과제는 마감이 기준 정각에서 leadHours 시간(정각 버킷) 뒤일 때 선택된다.
- * 중복 억제와 지연 복구는 서버의 notificationDeliveries 기록이 담당한다.
- *
- * 정각 버킷 기준이라 마감 23:59 짜리를 leadHours=2 로 두면 21시 실행에 걸리고,
- * 실제 여유는 leadHours ~ leadHours+1 시간이다(늦기보다 이르게 알린다).
- * 서버는 놓친 정각을 최대90분 동안 다시 평가한다.
- * 완료 여부·null 마감 거르기는 호출부(서버)가 이미 처리해 dues 로 넘긴다.
- */
-export function countDueSoon(dues: Date[], now: Date, leadHours: number): number {
-  const nowH = kstAbsHour(now)
-  let n = 0
-  for (const due of dues) {
-    if (kstAbsHour(due) - nowH === leadHours) n++
-  }
-  return n
 }
 
 export type Copy = { title: string; body: string; screen: string }
