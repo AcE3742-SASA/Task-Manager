@@ -18,10 +18,10 @@ describe('recoverable notification hours', () => {
     expect(recoverableSlots(current, current + HOUR)).toEqual([])
   })
 
-  it('prioritizes this hour and includes only the previous recoverable hour', () => {
-    expect(recoverableSlots(current, current - 24 * HOUR)).toEqual([current, current - HOUR])
+  it('includes every hour that can contain a reminder from the last 90 minutes', () => {
+    expect(recoverableSlots(current, current - 24 * HOUR)).toEqual([current, current - HOUR, current - 2 * HOUR])
     expect(recoverableSlots(current + 30 * 60_000, current - 24 * HOUR)).toEqual([current, current - HOUR])
-    expect(recoverableSlots(current + 30 * 60_000 + 1, current - 24 * HOUR)).toEqual([current])
+    expect(recoverableSlots(current + 30 * 60_000 + 1, current - 24 * HOUR)).toEqual([current, current - HOUR])
   })
 
   it('uses continuous hour slots across KST midnight and a UTC date boundary', () => {
@@ -47,9 +47,14 @@ describe('stored notification settings', () => {
     expect(notifySettings({ morningHour: value, eveningHour: value })).toEqual(DEFAULT_NOTIFY)
   })
 
-  it('accepts only the supported lead-hour choices', () => {
-    for (const soonBefore of [1, 2, 3, 6, 12]) expect(notifySettings({ soonBefore }).soonBefore).toBe(soonBefore)
-    for (const soonBefore of [0, 4, 24, '2', NaN, Infinity]) expect(notifySettings({ soonBefore }).soonBefore).toBeNull()
+  it('accepts custom intervals with minute precision and rejects invalid intervals', () => {
+    for (const soonBefore of [1 / 60, 0.5, 1, 2, 3, 4, 6, 12, 24, 48, 8760]) expect(notifySettings({ soonBefore }).soonBefore).toBe(soonBefore)
+    for (const soonBefore of [0, 1 / 120, 9000, '2', NaN, Infinity]) expect(notifySettings({ soonBefore }).soonBefore).toBeNull()
+  })
+
+  it('reads multiple reminders and treats an empty list as disabled', () => {
+    expect(notifySettings({ soonBefore: [12, 3, 1, 3, '6', 24] }).soonBefore).toEqual([1, 3, 12, 24])
+    expect(notifySettings({ soonBefore: [] }).soonBefore).toEqual([])
   })
 })
 
@@ -99,13 +104,56 @@ describe('messages and expiry for an hour slot', () => {
     expect(messages[0].copy.body).toBe('마감이 가까운 할 일 1건')
   })
 
-  it('expires a group at its earliest deadline and caps distant deadlines at the recovery window', () => {
-    const early = messagesForSlot(slot, slot, { ...disabled, soonBefore: 1 }, 'ko', [
+  it('keeps distinct reminder times and caps each expiry at its deadline or recovery window', () => {
+    const early = messagesForSlot(slot, slot + 30 * 60_000, { ...disabled, soonBefore: 1 }, 'ko', [
       new Date(slot + 80 * 60_000), new Date(slot + 70 * 60_000),
     ])
-    expect(early[0].expiresAt).toBe(slot + 70 * 60_000)
+    expect(early.map(message => message.expiresAt)).toEqual([slot + 80 * 60_000, slot + 70 * 60_000])
     const distant = messagesForSlot(slot, slot, { ...disabled, soonBefore: 2 }, 'ko', [new Date(slot + 2 * HOUR)])
     expect(distant[0].expiresAt).toBe(slot + CATCH_UP_MS)
+  })
+
+  it('reminds the same task at each selected lead time and never between them', () => {
+    const due = new Date(slot + 12 * HOUR + 59 * 60_000)
+    const notify = { ...disabled, soonBefore: [1, 3, 12] }
+    for (const hours of [12, 3, 1]) {
+      const current = slot + (12 - hours) * HOUR + 59 * 60_000
+      const messages = messagesForSlot(hourSlot(current), current, notify, 'ko', [due])
+      expect(messages).toHaveLength(1)
+      expect(messages[0].copy.body).toBe('마감이 가까운 할 일 1건')
+    }
+    expect(messagesForSlot(slot + HOUR, slot + HOUR, notify, 'ko', [due])).toEqual([])
+    expect(messagesForSlot(slot, slot, { ...disabled, soonBefore: [] }, 'ko', [due])).toEqual([])
+  })
+
+  it('combines tasks at different lead times into one message without counting duplicates', () => {
+    const messages = messagesForSlot(slot, slot, { ...disabled, soonBefore: [1, 3, 3] }, 'en', [
+      new Date(slot + HOUR), new Date(slot + 3 * HOUR), new Date(slot + 6 * HOUR), new Date(slot),
+    ])
+    expect(messages).toHaveLength(1)
+    expect(messages[0].copy.body).toBe('2 tasks due soon')
+    expect(messages[0].expiresAt).toBe(slot + HOUR)
+  })
+
+  it('uses the exact deadline for 30 minutes and two days, including 23:59 deadlines', () => {
+    const due = at('2026-11-20T14:59:00Z') // 23:59 KST
+    for (const hours of [0.5, 48]) {
+      const scheduledAt = due - hours * HOUR
+      const notify = { ...disabled, soonBefore: [hours] }
+      expect(messagesForSlot(hourSlot(scheduledAt), scheduledAt - 1, notify, 'ko', [new Date(due)])).toEqual([])
+      const messages = messagesForSlot(hourSlot(scheduledAt), scheduledAt, notify, 'ko', [new Date(due)])
+      expect(messages).toHaveLength(1)
+      expect(messages[0].scheduledAt).toBe(scheduledAt)
+    }
+  })
+
+  it('recovers late-hour reminders for 90 minutes and respects a frozen scan cutoff', () => {
+    const scheduledAt = slot + 59 * 60_000
+    const due = new Date(scheduledAt + 48 * HOUR)
+    const notify = { ...disabled, soonBefore: [48] }
+    expect(messagesForSlot(slot, scheduledAt + 80 * 60_000, notify, 'ko', [due])).toHaveLength(1)
+    expect(messagesForSlot(slot, scheduledAt + 91 * 60_000, notify, 'ko', [due])).toEqual([])
+    expect(messagesForSlot(slot, scheduledAt, notify, 'ko', [due], slot)).toEqual([])
   })
 })
 

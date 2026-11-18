@@ -2,14 +2,14 @@ import { createHash, randomUUID } from 'node:crypto'
 import { FieldPath } from 'firebase-admin/firestore'
 import type { DocumentReference, DocumentSnapshot, Firestore } from 'firebase-admin/firestore'
 import type webpush from 'web-push'
-import { kstHour, pickKinds } from '../lib/notify.js'
+import { dueSoonHours, kstHour, pickKinds } from '../lib/notify.js'
 import type { Lang } from '../lib/i18n.js'
 import type { SubDoc } from './push.js'
 import { validPushSubscription } from './push.js'
 import {
   deliveryId, initialNotificationSlot, LEASE_MS, MAX_ATTEMPTS, messagesForSlot,
   notifySettings, recoverableSlots, RETENTION_MS, retryablePushError, retryDelay,
-  RUN_BUDGET_MS, SEND_TIMEOUT_MS,
+  HOUR, RUN_BUDGET_MS, SEND_TIMEOUT_MS,
 } from './notification-schedule.js'
 import type { ScheduledMessage } from './notification-schedule.js'
 
@@ -22,7 +22,7 @@ type DeliveryState = {
   nextAttemptAt: number
   expiresAt: Date
 }
-type RunState = { done?: boolean; cursor?: string | null; pending?: boolean; nextAttemptAt?: number }
+type RunState = { done?: boolean; cursor?: string | null; pending?: boolean; nextAttemptAt?: number; through?: number }
 export type NotificationReport = {
   sent: number; failed: number; pruned: number; skipped: number; pending: number
   abandoned: number; userFailures: number; scanned: number; busy: boolean
@@ -53,7 +53,7 @@ async function sendOnce(services: Services, snapshot: DocumentSnapshot, sub: Sub
   const { db, webpush } = services
   if (Date.now() >= message.expiresAt) { report.skipped++; return true }
   if (Date.now() + MIN_SEND_BUDGET_MS > deadline) return false
-  const id = deliveryId(slot, snapshot.ref.path, fingerprint(sub), message.kind)
+  const id = deliveryId(message.scheduledAt, snapshot.ref.path, fingerprint(sub), message.kind)
   const ref = db.doc(`notificationDeliveries/${id}`)
   const claim = await db.runTransaction(async tx => {
     const saved = await tx.get(ref)
@@ -168,7 +168,10 @@ export async function runScheduledNotifications(services: Services): Promise<Not
       const run = db.doc(`notificationRuns/${slot}`)
       const snapshot = await run.get()
       const saved = snapshot.data() as RunState | undefined
-      if (saved?.done || (saved?.nextAttemptAt ?? 0) > started) continue
+      const targetThrough = Math.min(started, slot + HOUR)
+      if ((saved?.done && (saved.through ?? 0) >= targetThrough) || (saved?.nextAttemptAt ?? 0) > started) continue
+      // 이어 읽는 동안 예약 범위를 고정해, 이미 지나간 커서 앞의 새 예약을 놓치지 않는다.
+      const through = saved?.cursor && saved.through !== undefined ? saved.through : targetThrough
       let cursor = saved?.cursor ?? null
       let pending = saved?.pending ?? false
       let done = false
@@ -182,9 +185,10 @@ export async function runScheduledNotifications(services: Services): Promise<Not
             const settings = (await db.doc(`users/${uid}/settings/app`).get()).data() ?? {}
             const notify = notifySettings(settings.notify)
             const kinds = pickKinds(kstHour(new Date(slot)), notify)
-            if (!kinds.length && notify.soonBefore === null) return []
+            const hasDueSoon = dueSoonHours(notify.soonBefore).length > 0
+            if (!kinds.length && !hasDueSoon) return []
             const dues: Date[] = []
-            if (kinds.includes('morning') || notify.soonBefore !== null) {
+            if (kinds.includes('morning') || hasDueSoon) {
               const tasks = await db.collection(`users/${uid}/tasks`).where('done', '==', false).select('due').get()
               for (const task of tasks.docs) {
                 const due = task.get('due')
@@ -194,7 +198,7 @@ export async function runScheduledNotifications(services: Services): Promise<Not
                 }
               }
             }
-            return messagesForSlot(slot, Date.now(), notify, (settings.lang === 'en' ? 'en' : 'ko') as Lang, dues)
+            return messagesForSlot(slot, Date.now(), notify, (settings.lang === 'en' ? 'en' : 'ko') as Lang, dues, through)
           })()
           plans.set(uid, plan)
         }
@@ -247,7 +251,7 @@ export async function runScheduledNotifications(services: Services): Promise<Not
           break
         }
       }
-      await run.set({ done, cursor, pending, nextAttemptAt, expiresAt: new Date(slot + RETENTION_MS) })
+      await run.set({ done, cursor, pending, nextAttemptAt, through, expiresAt: new Date(slot + RETENTION_MS) })
       if (!done) report.pending++
     }
   } finally {

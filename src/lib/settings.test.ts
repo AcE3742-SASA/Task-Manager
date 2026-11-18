@@ -24,6 +24,16 @@ function deferred() {
 beforeEach(() => { vi.clearAllMocks(); mock.statuses.length = 0; mock.write.mockResolvedValue(undefined) })
 
 describe('settings save feedback and retry', () => {
+  it('retries the latest reminder list, including turning all reminders off', async () => {
+    const changes = useSettingsMutation('synthetic-user')
+    mock.write.mockRejectedValueOnce(new Error('denied'))
+    await changes.save({ notify: { soonBefore: [1, 3, 12] } })
+    await changes.retry()
+    expect(mock.write.mock.calls[1][1]).toEqual({ notify: { soonBefore: [1, 3, 12] } })
+    await changes.save({ notify: { soonBefore: [] } })
+    expect(mock.write.mock.calls[2][1]).toEqual({ notify: { soonBefore: [] } })
+  })
+
   it('keeps an independent field failure visible after a later field succeeds and retries only the failed value', async () => {
     const earlier = deferred()
     mock.write.mockReturnValueOnce(earlier.promise)

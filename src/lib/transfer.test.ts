@@ -64,6 +64,20 @@ describe('가져오기 파일 검증', () => {
     expect(bundle.tasks[0]).toMatchObject({ id: 't1', repeat: 'none', done: false, focusDate: null })
   })
 
+  it('여러 마감 알림과 이전 단일 알림을 보존해 다시 가져온다', () => {
+    for (const soonBefore of [null, 3, [], [1, 3, 12], [0.5, 2, 48], [1 / 60, 8760]]) {
+      const bundle = parseBundle(JSON.stringify({ ...good(), settings: { notify: { soonBefore } } }))
+      expect(bundle.settings.notify).toEqual({ morningHour: 7, eveningHour: 21, soonBefore })
+      expect(parseBundle(JSON.stringify(bundle))).toEqual(bundle)
+    }
+  })
+
+  it.each([[1, '3'], [3, 9000], [1 / 120], [null], [{}]])('잘못된 마감 알림 목록 %j은 저장 전에 거부한다', (...soonBefore) => {
+    expect(() => parseBundle(JSON.stringify({ ...good(), settings: { notify: { soonBefore } } }))).toThrow()
+    expect(store.reads).toBe(0)
+    expect(store.batches).toBe(0)
+  })
+
   it.each([
     ['JSON 아님', '시간표.pdf'],
     ['다른 앱', JSON.stringify({ ...good(), app: 'other-app' })],

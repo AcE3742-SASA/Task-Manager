@@ -4,6 +4,7 @@ import { SubjectIcon } from '../components/subject-icons'
 import { IconArrow } from '../components/icons'
 import { useT } from '../lib/i18n'
 import { useSettingsMutation, useAppSettings } from '../lib/settings'
+import { DUE_SOON_HOURS, dueSoonHours, MAX_REMINDER_HOURS, validReminderHours } from '../lib/notify'
 import {
   getPushStatus,
   sendTestPush,
@@ -18,6 +19,13 @@ import { AppearanceSettings } from '../components/AppearanceSettings'
 import { LiquidSurface } from '../components/LiquidSurface'
 
 const GITHUB = 'https://github.com/AcE3742-SASA'
+
+function reminderLabel(hours: number, t: (ko: string, en: string) => string): string {
+  const minutes = Math.round(hours * 60)
+  if (minutes % 1440 === 0) return t(`${minutes / 1440}일 전`, `${minutes / 1440}d before`)
+  if (minutes % 60 === 0) return t(`${minutes / 60}시간 전`, `${minutes / 60}h before`)
+  return t(`${minutes}분 전`, `${minutes}m before`)
+}
 
 function Seg<T extends string | number>({
   value,
@@ -105,7 +113,7 @@ const hourOpts = (offLabel: string): { v: number | null; label: string }[] => [
 
 /**
  * null 을 포함한 숫자 드롭다운을 담은 설정 행. 행 어디를 눌러도 드롭다운이 열린다.
- * 시각(아침·저녁)과 여유 시간("곧 마감")이 같은 모양을 쓰므로 선택지를 밖에서 받는다.
+ * 아침·저녁 알림 시각을 선택한다.
  */
 function SelectRow({
   icon,
@@ -227,10 +235,30 @@ export function Settings({ uid }: { uid: string }) {
   const t = useT()
   const { weekStartsOn, lang, notify, settingsStatus } = useAppSettings()
   const changes = useSettingsMutation(uid)
+  const leadHours = dueSoonHours(notify.soonBefore)
+  const [reminderAmount, setReminderAmount] = useState('')
+  const [reminderUnit, setReminderUnit] = useState(60)
+  const [reminderError, setReminderError] = useState<string | null>(null)
   const [testing, setTesting] = useState(false)
   const [testMessage, setTestMessage] = useState<string | null>(null)
   const [testFailed, setTestFailed] = useState(false)
   const dev = useThisDevice(uid)
+
+  function addReminder() {
+    const amount = Number(reminderAmount)
+    const hours = amount * reminderUnit / 60
+    if (!Number.isInteger(amount) || amount <= 0 || !validReminderHours(hours)) {
+      setReminderError(t('1분부터 365일 전까지, 선택한 단위의 정수로 입력해 주세요.', 'Enter a whole number in the selected unit, from 1 minute to 365 days.'))
+      return
+    }
+    if (leadHours.includes(hours)) {
+      setReminderError(t('이미 설정한 알림이에요.', 'This reminder is already set.'))
+      return
+    }
+    void changes.save({ notify: { soonBefore: dueSoonHours([...leadHours, hours]) } })
+    setReminderAmount('')
+    setReminderError(null)
+  }
 
   async function testNotification() {
     if (testing) return
@@ -339,22 +367,65 @@ export function Settings({ uid }: { uid: string }) {
           onPick={(v) => void changes.save({ notify: { eveningHour: v } })}
         />
 
-        <SelectRow
-          icon="bell"
-          title={t('곧 마감 알림', 'Due soon alert')}
-          desc={t('마감 전 미리 알림', 'A heads-up before a deadline')}
-          value={notify.soonBefore}
-          label={t('마감 몇 시간 전', 'How long before the deadline')}
-          options={[
-            { v: null, label: t('끔', 'Off') },
-            { v: 1, label: t('1시간 전', '1h before') },
-            { v: 2, label: t('2시간 전', '2h before') },
-            { v: 3, label: t('3시간 전', '3h before') },
-            { v: 6, label: t('6시간 전', '6h before') },
-            { v: 12, label: t('12시간 전', '12h before') },
-          ]}
-          onPick={(v) => void changes.save({ notify: { soonBefore: v } })}
-        />
+        <div className="row reminder-row">
+          <LiquidSurface />
+          <SubjectIcon id="bell" />
+          <span className="rl">
+            <b id="due-soon-label">{t('곧 마감 알림', 'Due soon alerts')}</b>
+            <em id="due-soon-hint">{t('간격을 고르거나 직접 입력해 여러 알림을 설정하세요.', 'Choose intervals or add your own reminders.')}</em>
+          </span>
+          <div className="reminder-options" role="group" aria-labelledby="due-soon-label" aria-describedby="due-soon-hint">
+            <button
+              type="button"
+              className={`chip${leadHours.length === 0 ? ' on' : ''}`}
+              aria-pressed={leadHours.length === 0}
+              onClick={() => void changes.save({ notify: { soonBefore: [] } })}
+            >{t('끔', 'Off')}</button>
+            {dueSoonHours([...DUE_SOON_HOURS, ...leadHours]).map(hours => (
+              <button
+                key={hours}
+                type="button"
+                className={`chip${leadHours.includes(hours) ? ' on' : ''}`}
+                aria-pressed={leadHours.includes(hours)}
+                onClick={() => void changes.save({ notify: { soonBefore: leadHours.includes(hours)
+                  ? leadHours.filter(value => value !== hours)
+                  : dueSoonHours([...leadHours, hours]) } })}
+              >{reminderLabel(hours, t)}</button>
+            ))}
+          </div>
+          <form className="reminder-custom" noValidate onSubmit={event => { event.preventDefault(); addReminder() }}>
+            <label htmlFor="reminder-amount">{t('알림 간격 직접 입력', 'Custom reminder interval')}</label>
+            <div className="reminder-inputs">
+              <input
+                id="reminder-amount"
+                className="inp"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={MAX_REMINDER_HOURS * 60 / reminderUnit}
+                step={1}
+                required
+                value={reminderAmount}
+                placeholder={t('숫자', 'Number')}
+                aria-invalid={!!reminderError}
+                aria-describedby={reminderError ? 'reminder-error' : undefined}
+                onChange={event => { setReminderAmount(event.target.value); setReminderError(null) }}
+              />
+              <select
+                className="hourpick"
+                aria-label={t('알림 간격 단위', 'Reminder interval unit')}
+                value={reminderUnit}
+                onChange={event => { setReminderUnit(Number(event.target.value)); setReminderError(null) }}
+              >
+                <option value={1}>{t('분 전', 'minutes before')}</option>
+                <option value={60}>{t('시간 전', 'hours before')}</option>
+                <option value={1440}>{t('일 전', 'days before')}</option>
+              </select>
+              <button type="submit" className="chip">{t('추가', 'Add')}</button>
+            </div>
+            {reminderError && <p id="reminder-error" className="reminder-error" role="alert">{reminderError}</p>}
+          </form>
+        </div>
 
         {/* 예약 발송과 기기 수신 시각은 다르며, 지연 상한을 보장하지 않는다. */}
         <p className="rows-note">

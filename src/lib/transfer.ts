@@ -2,6 +2,7 @@ import { Timestamp, collection, doc, getDocFromServer, getDocsFromServer, writeB
 import type { DocumentData } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import { THEME_STYLES } from './appearance'
+import { dueSoonHours, validReminderHours } from './notify'
 import type { Settings } from './settings'
 
 const APP = 'sasa-task-manager'
@@ -81,10 +82,16 @@ function parseSettings(value: unknown): Partial<Settings> {
     // 이전 버전의 부분 설정도 읽되, 빠진 값은 그 버전의 기본값으로 채운다.
     const hour = (value: unknown, fallback: number) => value === null ? null
       : choice(value ?? fallback, Array.from({ length: 24 }, (_, i) => i), '알림 시각')
+    const lead = (value: unknown) => {
+      if (!validReminderHours(value)) invalid('마감 알림은 1분부터 365일 전까지 분 단위로 설정해 주세요.')
+      return value
+    }
     result.notify = {
       morningHour: hour(notify.morningHour, 7),
       eveningHour: hour(notify.eveningHour, 21),
-      soonBefore: notify.soonBefore == null ? null : choice(notify.soonBefore, [1, 2, 3, 6, 12], '마감 알림'),
+      soonBefore: Array.isArray(notify.soonBefore)
+        ? dueSoonHours(notify.soonBefore.map(lead))
+        : notify.soonBefore == null ? null : lead(notify.soonBefore),
     }
   }
   return result
