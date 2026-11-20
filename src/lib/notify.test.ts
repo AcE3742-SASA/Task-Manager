@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countDue, dueSoonCopy, dueSoonHours, kstHour, notifyCopy, pickKinds } from './notify'
+import { countDue, dueSoonCopy, dueSoonHours, kstHour, notifyCopy, pickKinds, validReminderHours } from './notify'
 
 /** 테스트를 로컬 시간대와 무관하게 쓰기 위해 UTC 순간으로 다룬다. KST = UTC+9. */
 const at = (iso: string) => new Date(iso)
@@ -14,9 +14,19 @@ describe('dueSoonHours', () => {
     expect(dueSoonHours([12, 1, 3, 3, '6', 0, 9000, null])).toEqual([1, 3, 12])
   })
 
-  it('accepts minute, hour and day intervals with a one-minute resolution', () => {
-    expect(dueSoonHours([48, 0.5, 2, 1 / 60, 8760, 0.5])).toEqual([1 / 60, 0.5, 2, 48, 8760])
+  it('rounds legacy minute intervals up to ten minutes and deduplicates the result', () => {
+    expect(dueSoonHours([48, 0.5, 2, 1 / 60, 5 / 60, 10 / 60, 15 / 60, 8760, 0.5]))
+      .toEqual([10 / 60, 20 / 60, 0.5, 2, 48, 8760])
     expect(dueSoonHours([-1, 0, 1 / 120, 0.123, 8761, NaN, Infinity])).toEqual([])
+    expect(dueSoonHours(15 / 60)).toEqual([20 / 60])
+    expect(dueSoonHours([8760 - 1 / 60])).toEqual([8760])
+    const normalized = dueSoonHours([10 / 60, 20 / 60, 70 / 60, 8760])
+    expect(dueSoonHours(normalized)).toEqual(normalized)
+  })
+
+  it('accepts new settings only in ten-minute increments', () => {
+    for (const minutes of [10, 20, 30, 70, 1440, 365 * 1440]) expect(validReminderHours(minutes / 60)).toBe(true)
+    for (const minutes of [0, 1, 5, 15, 19, 30.5, 365 * 1440 + 10]) expect(validReminderHours(minutes / 60)).toBe(false)
   })
 })
 

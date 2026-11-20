@@ -4,7 +4,7 @@ import { SubjectIcon } from '../components/subject-icons'
 import { IconArrow } from '../components/icons'
 import { useT } from '../lib/i18n'
 import { useSettingsMutation, useAppSettings } from '../lib/settings'
-import { DUE_SOON_HOURS, dueSoonHours, MAX_REMINDER_HOURS, validReminderHours } from '../lib/notify'
+import { DUE_SOON_HOURS, dueSoonHours, MAX_REMINDER_HOURS, REMINDER_STEP_MINUTES, validReminderHours } from '../lib/notify'
 import {
   getPushStatus,
   sendTestPush,
@@ -248,7 +248,7 @@ export function Settings({ uid }: { uid: string }) {
     const amount = Number(reminderAmount)
     const hours = amount * reminderUnit / 60
     if (!Number.isInteger(amount) || amount <= 0 || !validReminderHours(hours)) {
-      setReminderError(t('1분부터 365일 전까지, 선택한 단위의 정수로 입력해 주세요.', 'Enter a whole number in the selected unit, from 1 minute to 365 days.'))
+      setReminderError(t('10분부터 365일 전까지 설정할 수 있어요. 분은 10의 배수로, 시간·일은 정수로 입력해 주세요.', 'Use 10-minute increments, from 10 minutes to 365 days. Enter whole numbers for hours or days.'))
       return
     }
     if (leadHours.includes(hours)) {
@@ -372,7 +372,7 @@ export function Settings({ uid }: { uid: string }) {
           <SubjectIcon id="bell" />
           <span className="rl">
             <b id="due-soon-label">{t('곧 마감 알림', 'Due soon alerts')}</b>
-            <em id="due-soon-hint">{t('간격을 고르거나 직접 입력해 여러 알림을 설정하세요.', 'Choose intervals or add your own reminders.')}</em>
+            <em id="due-soon-hint">{t('10분 단위로 여러 알림을 설정하세요. 예: 10분, 30분, 2일 전', 'Set multiple reminders in 10-minute increments, such as 10 minutes, 30 minutes, or 2 days before.')}</em>
           </span>
           <div className="reminder-options" role="group" aria-labelledby="due-soon-label" aria-describedby="due-soon-hint">
             <button
@@ -401,9 +401,9 @@ export function Settings({ uid }: { uid: string }) {
                 className="inp"
                 type="number"
                 inputMode="numeric"
-                min={1}
+                min={reminderUnit === 1 ? REMINDER_STEP_MINUTES : 1}
                 max={MAX_REMINDER_HOURS * 60 / reminderUnit}
-                step={1}
+                step={reminderUnit === 1 ? REMINDER_STEP_MINUTES : 1}
                 required
                 value={reminderAmount}
                 placeholder={t('숫자', 'Number')}
@@ -430,8 +430,8 @@ export function Settings({ uid }: { uid: string }) {
         {/* 예약 발송과 기기 수신 시각은 다르며, 지연 상한을 보장하지 않는다. */}
         <p className="rows-note">
           {t(
-            '예약 알림은 서버와 기기 연결 상태에 따라 늦어지거나 누락될 수 있어요. 테스트 알림으로 이 기기의 연결을 확인해 보세요.',
-            'Scheduled notifications can be delayed or missed depending on the server and device connection. Use a test notification to check this device.',
+            '예약 알림은 10분마다 확인해 설정 시각 이후 다음 확인 때 보내요. 서버와 기기 연결 상태에 따라 더 늦어질 수 있어요.',
+            'Scheduled reminders are checked every 10 minutes and sent on the next check after their scheduled time. Server or device connectivity may cause further delays.',
           )}
         </p>
 
