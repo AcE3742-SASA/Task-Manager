@@ -17,7 +17,7 @@ export type NotifyKind = 'morning' | 'evening'
 
 /**
  * morningHour·eveningHour: 0~23 시(KST). null 이면 그 알림을 끈다. 정각 트리거다.
- * soonBefore: 마감 전 간격들(시). 분 단위는 1/60시로 저장하며 이전 숫자 하나도 읽는다.
+ * soonBefore: 마감 전 간격들(시). 10분 단위로 설정하며 이전 숫자 하나도 읽는다.
  *   null 또는 빈 배열이면 끈다. 과제 하나하나의 마감을 기준으로 걸리는
  *   사건 트리거라 morning·evening 과 성격이 다르다 — pickKinds 가 아니라
  *   서버가 마감 시각에서 간격을 빼서 예약 시점을 계산한다.
@@ -29,17 +29,24 @@ export type Notify = {
 }
 
 export const DUE_SOON_HOURS = [1, 2, 3, 6, 12] as const
+export const REMINDER_STEP_MINUTES = 10
 export const MAX_REMINDER_HOURS = 365 * 24
 
-export function validReminderHours(value: unknown): value is number {
+function validStoredReminderHours(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 1 / 60 && value <= MAX_REMINDER_HOURS
     && Math.abs(value * 60 - Math.round(value * 60)) < 1e-7
 }
 
-/** 저장된 단일 값과 여러 값을 같은 방식으로 읽고 중복·잘못된 값을 거른다. */
+export function validReminderHours(value: unknown): value is number {
+  return validStoredReminderHours(value) && Math.round(value * 60) % REMINDER_STEP_MINUTES === 0
+}
+
+/** 이전 분 단위 설정은 알림을 잃지 않도록 다음 10분 단위로 올리고 중복을 합친다. */
 export function dueSoonHours(value: unknown): number[] {
   const values: unknown[] = Array.isArray(value) ? value : [value]
-  return [...new Set(values.filter(validReminderHours).map(hour => Math.round(hour * 60) / 60))].sort((a, b) => a - b)
+  return [...new Set(values.filter(validStoredReminderHours)
+    .map(hour => Math.ceil(Math.round(hour * 60) / REMINDER_STEP_MINUTES) * REMINDER_STEP_MINUTES / 60))]
+    .sort((a, b) => a - b)
 }
 
 /**

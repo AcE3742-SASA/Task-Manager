@@ -61,8 +61,15 @@ try {
   const amount = page.getByLabel('알림 간격 직접 입력', { exact: true })
   const unit = page.getByLabel('알림 간격 단위', { exact: true })
   const add = page.locator('.reminder-custom').getByRole('button', { name: '추가', exact: true })
-  await amount.fill('30')
   await unit.selectOption('1')
+  assert.equal(await amount.getAttribute('min'), '10')
+  assert.equal(await amount.getAttribute('step'), '10')
+  for (const invalid of ['5', '15']) {
+    await amount.fill(invalid)
+    await add.click()
+    assert.match(await page.locator('#reminder-error').innerText(), /10의 배수/)
+  }
+  await amount.fill('30')
   await amount.press('Enter')
   await amount.fill('2')
   await unit.selectOption('1440')

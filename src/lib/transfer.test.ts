@@ -65,9 +65,17 @@ describe('가져오기 파일 검증', () => {
   })
 
   it('여러 마감 알림과 이전 단일 알림을 보존해 다시 가져온다', () => {
-    for (const soonBefore of [null, 3, [], [1, 3, 12], [0.5, 2, 48], [1 / 60, 8760]]) {
+    for (const soonBefore of [null, 3, [], [1, 3, 12], [0.5, 2, 48], [10 / 60, 8760]]) {
       const bundle = parseBundle(JSON.stringify({ ...good(), settings: { notify: { soonBefore } } }))
       expect(bundle.settings.notify).toEqual({ morningHour: 7, eveningHour: 21, soonBefore })
+      expect(parseBundle(JSON.stringify(bundle))).toEqual(bundle)
+    }
+  })
+
+  it('이전 백업의 분 단위 알림은 다음 10분 단위로 올려 가져온다', () => {
+    for (const [value, expected] of [[5 / 60, 10 / 60], [[1 / 60, 5 / 60, 15 / 60, 20 / 60], [10 / 60, 20 / 60]]]) {
+      const bundle = parseBundle(JSON.stringify({ ...good(), settings: { notify: { soonBefore: value } } }))
+      expect(bundle.settings.notify?.soonBefore).toEqual(expected)
       expect(parseBundle(JSON.stringify(bundle))).toEqual(bundle)
     }
   })

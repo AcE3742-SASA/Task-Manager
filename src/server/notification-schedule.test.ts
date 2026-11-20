@@ -47,9 +47,14 @@ describe('stored notification settings', () => {
     expect(notifySettings({ morningHour: value, eveningHour: value })).toEqual(DEFAULT_NOTIFY)
   })
 
-  it('accepts custom intervals with minute precision and rejects invalid intervals', () => {
-    for (const soonBefore of [1 / 60, 0.5, 1, 2, 3, 4, 6, 12, 24, 48, 8760]) expect(notifySettings({ soonBefore }).soonBefore).toBe(soonBefore)
+  it('accepts ten-minute intervals and rejects invalid intervals', () => {
+    for (const soonBefore of [10 / 60, 20 / 60, 0.5, 1, 2, 3, 4, 6, 12, 24, 48, 8760]) expect(notifySettings({ soonBefore }).soonBefore).toBe(soonBefore)
     for (const soonBefore of [0, 1 / 120, 9000, '2', NaN, Infinity]) expect(notifySettings({ soonBefore }).soonBefore).toBeNull()
+  })
+
+  it('rounds stored reminders up using the same rules as the settings UI', () => {
+    expect(notifySettings({ soonBefore: 5 / 60 }).soonBefore).toBe(10 / 60)
+    expect(notifySettings({ soonBefore: [5 / 60, 10 / 60, 15 / 60] }).soonBefore).toEqual([10 / 60, 20 / 60])
   })
 
   it('reads multiple reminders and treats an empty list as disabled', () => {
@@ -154,6 +159,15 @@ describe('messages and expiry for an hour slot', () => {
     expect(messagesForSlot(slot, scheduledAt + 80 * 60_000, notify, 'ko', [due])).toHaveLength(1)
     expect(messagesForSlot(slot, scheduledAt + 91 * 60_000, notify, 'ko', [due])).toEqual([])
     expect(messagesForSlot(slot, scheduledAt, notify, 'ko', [due], slot)).toEqual([])
+  })
+
+  it('delivers a rounded legacy reminder on the next ten-minute poll before the deadline', () => {
+    const due = at('2026-11-20T14:59:00Z')
+    const scheduledAt = due - 20 * 60_000
+    const now = at('2026-11-20T14:40:20Z')
+    const messages = messagesForSlot(hourSlot(now), now, { ...disabled, soonBefore: [15 / 60] }, 'ko', [new Date(due)])
+    expect(messages).toHaveLength(1)
+    expect(messages[0].scheduledAt).toBe(scheduledAt)
   })
 })
 
